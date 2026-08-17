@@ -1,7 +1,7 @@
 <div align="center">
 
 # 💻 CODELAB IF'25 | PLATFORM PRAKTIKUM PEMROGRAMAN
-### *Laboratorium Rekayasa Perangkat Lunak & Sistem Informasi — Informatika USK 2025*
+### *Informatics 2025*
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://www.python.org/)
