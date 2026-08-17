@@ -11,7 +11,7 @@
 
 <br/>
 
-**Codelab IF'25** adalah platform pembelajaran dan praktikum interaktif berbasis web untuk mahasiswa Jurusan Informatika Universitas Syiah Kuala (USK). Platform ini menggabungkan Web IDE, kurikulum modul terstruktur, sistem evaluasi otomatis (*auto-grader*), papan peringkat (*leaderboard*), pemantauan *live score*, dan manajemen studio bagi Asisten Laboratorium (Aslab).
+**Codelab IF'25** adalah platform pembelajaran dan praktikum interaktif berbasis web untuk mahasiswa Jurusan Informatika. Platform ini menggabungkan Web IDE, kurikulum modul terstruktur, sistem evaluasi otomatis (*auto-grader*), papan peringkat (*leaderboard*), pemantauan *live score*, dan manajemen studio bagi Asisten Laboratorium (Aslab).
 
 ---
 
