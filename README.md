@@ -30,13 +30,13 @@
 
 ## 🌟 Fitur Utama
 
-### 1. ⚡ Integrated Web IDE (C & Python)
+### 1. ⚡ Integrated Web IDE
 - **Compiler Sandboxed**: Eksekusi kode C (GCC) dan Python 3 secara *real-time* langsung dari peramban.
 - **Terminal Interaktif**: Menampilkan output eksekusi, error runtime, serta waktu eksekusi (*execution time* dalam milidetik).
 - **Split Workspace & Scratchpad**: Dilengkapi area coret-coret / catatan koding pribadi di sisi kiri editor.
 - **Auto Submission**: Tombol **`🚀 Submit Tugas`** untuk langsung mengevaluasi tugas praktikum dan mengirim skor ke papan nilai.
 
-### 2. 🗺️ Interactive Course Map & 9 Modul Resmi
+### 2. 🗺️ Interactive Course Map & 9 Modul
 Kurikulum praktikum pemrograman Semester 1 terstruktur lengkap:
 1. **Modul 1**: Pengantar Bahasa C, Struktur Dasar & `printf()`
 2. **Modul 2**: Tipe Data Dasar, Format Specifier & `scanf()`
@@ -54,7 +54,7 @@ Kurikulum praktikum pemrograman Semester 1 terstruktur lengkap:
 - **Live Scoreboard Tugas**: Feed langsung yang menampilkan nilai dan status evaluasi tugas (*PASSED/FAILED*) secara *real-time* saat sesi praktikum berlangsung.
 - **Pencarian Cepat**: Fitur pencarian instan nama atau NIM mahasiswa.
 
-### 4. 👑 Aslab Studio (Multi-Akun Dinamis dengan Hak Akses Setara)
+### 4. 👑 Aslab Studio
 - 3 Akun resmi Aslab yang tersimpan dinamis di database SQLite (`app.db`).
 - **Hak akses penuh dan setara**: Setiap Aslab dapat mengelola seluruh konten tanpa pembatasan:
   - 📚 **Kelola Modul**: Tambah, edit, dan hapus modul kurikulum.
@@ -123,7 +123,7 @@ graph TD
    cd Codelab
    ```
 
-2. **Buat & Aktifkan Virtual Environment** (Opsional tapi disarankan):
+2. **Buat & Aktifkan Virtual Environment**:
    ```bash
    # Windows
    python -m venv .venv
