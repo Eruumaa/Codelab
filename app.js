@@ -842,57 +842,89 @@ int main() {
   }
 
   function renderArticlesList() {
+    const bodyContainer = document.getElementById("article-full-content");
+    const bottomBar = document.querySelector(".article-bottom-bar");
+    const titleEl = document.getElementById("article-page-header-title");
+    const ideBtn = document.getElementById("btn-open-article-in-ide");
+
     if (state.articles.length === 0) {
-      openArticle(0);
+      if (titleEl) titleEl.textContent = "Belum Ada Artikel Teori";
+      if (bottomBar) bottomBar.style.display = "none";
+      if (ideBtn) ideBtn.style.display = "none";
+      if (bodyContainer) {
+        bodyContainer.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; background: rgba(15, 23, 42, 0.6); border: 1px dashed rgba(56, 189, 248, 0.3); border-radius: 12px; margin: 30px auto; max-width: 680px;">
+            <span style="font-size: 3.2rem; margin-bottom: 14px;">📖</span>
+            <h2 style="font-family: var(--font-pixel); font-size: 1.1rem; color: var(--text-primary); margin-bottom: 8px;">Belum Ada Artikel Teori</h2>
+            <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; max-width: 520px; margin-bottom: 24px;">
+              Halaman artikel teori saat ini masih kosong. Artikel bacaan, studi kasus, dan materi rujukan tambahan nantinya akan diterbitkan langsung oleh Asisten Laboratorium (Aslab) melalui Aslab Studio.
+            </p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+              <button class="btn-pixel btn-primary-action" id="btn-art-go-course">🗺️ Buka Course Map</button>
+              <button class="btn-pixel btn-hero-ghost" id="btn-art-go-aslab">👑 Studio Aslab</button>
+            </div>
+          </div>
+        `;
+        document.getElementById("btn-art-go-course")?.addEventListener("click", () => switchPage("course"));
+        document.getElementById("btn-art-go-aslab")?.addEventListener("click", () => {
+          if (state.isAslabAuthenticated) {
+            switchPage("aslab");
+          } else {
+            openAuthModal("aslab");
+          }
+        });
+      }
       return;
     }
-    openArticle(state.activeMaterialIndex || 0);
+
+    if (bottomBar) bottomBar.style.display = "flex";
+    if (ideBtn) ideBtn.style.display = "inline-flex";
+    openArticle(0);
   }
 
   function openArticle(index) {
-    if (index < 0 || index >= state.materials.length) return;
-    state.activeMaterialIndex = index;
-    const mat = state.materials[index];
-    const art = state.articles.find(a => a.module_id === mat.id) || state.articles[index] || null;
+    if (state.articles.length === 0) {
+      renderArticlesList();
+      return;
+    }
+
+    if (index < 0 || index >= state.articles.length) return;
+    const art = state.articles[index];
 
     const titleEl = document.getElementById("article-page-header-title");
-    if (titleEl) titleEl.textContent = mat.title;
+    if (titleEl) titleEl.textContent = art.title;
     
     const stepEl = document.getElementById("article-reading-step-lbl");
-    if (stepEl) stepEl.textContent = `Modul ${index + 1} dari ${state.materials.length}`;
+    if (stepEl) stepEl.textContent = `Artikel ${index + 1} dari ${state.articles.length}`;
 
     const bodyContainer = document.getElementById("article-full-content");
     if (bodyContainer) {
-      const refUrl = art?.references_url || "https://ocw.mit.edu/courses/6-s096-introduction-to-c-and-c-january-iap-2013/";
       bodyContainer.innerHTML = `
-        <h1>${mat.title}</h1>
+        <h1>${art.title}</h1>
         <div style="display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;">
-          <span class="badge-lang-tag">${mat.language.toUpperCase()}</span>
-          <span class="badge-time-tag">⏱️ ${art?.reading_time || '15 Menit Baca'}</span>
+          <span class="badge-lang-tag">${art.category || 'TEORI'}</span>
+          <span class="badge-time-tag">⏱️ ${art.reading_time || '10 Menit'}</span>
           <span class="badge-xp-tag">+25 Reading XP</span>
         </div>
-        ${art ? art.content : mat.content}
+        ${art.content}
         
+        ${art.references_url ? `
         <div class="callout-box" style="margin-top: 32px; border-left: 4px solid var(--accent-cyan); background: rgba(15, 23, 42, 0.85);">
-          <strong style="color: var(--accent-cyan);">📚 Referensi Kurikulum Resmi MIT OpenCourseWare:</strong>
+          <strong style="color: var(--accent-cyan);">📚 Referensi Kurikulum Resmi:</strong>
           <p style="margin: 8px 0 0; font-size: 0.88rem;">
-            Pelajari konsep terkait pada modul terbuka MIT: <br>
-            • <a href="https://ocw.mit.edu/courses/6-s096-introduction-to-c-and-c-january-iap-2013/" target="_blank" rel="noopener" style="color: #38bdf8; text-decoration: underline;">MIT 6.S096: Introduction to C and C++ ↗</a><br>
-            • <a href="https://ocw.mit.edu/courses/6-087-practical-programming-in-c-january-iap-2010/pages/syllabus/" target="_blank" rel="noopener" style="color: #38bdf8; text-decoration: underline;">MIT 6.087: Practical Programming in C - Syllabus ↗</a>
+            Pelajari konsep terkait pada materi rujukan: <br>
+            • <a href="${art.references_url}" target="_blank" rel="noopener" style="color: #38bdf8; text-decoration: underline;">${art.references_url} ↗</a>
           </p>
-        </div>
+        </div>` : ''}
       `;
     }
 
     const ideBtn = document.getElementById("btn-open-article-in-ide");
     if (ideBtn) {
       ideBtn.onclick = () => {
-        loadMaterial(index);
-        switchPage("workspace");
+        switchPage("ide");
       };
     }
-
-    switchPage("materials");
   }
 
   // ─── Workspace Controller (Guided Exercise) ───
