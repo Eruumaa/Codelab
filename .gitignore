@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Customizations and IDE internals
+.agents/
+.gemini/
+scratch/
+*.log
+
+# Excluded References requested by user
+References/
+
+# Local database journals and temp files
+*.db-journal
