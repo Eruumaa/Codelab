@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Codelab by Informatics 25 — Platform Belajar Praktikum Pemrograman Khusus Tanpa Internet">
+  <title>Codelab by Informatics 25</title>
+  <link rel="icon" href="Assets/IF_CodingLab_LOGO.png" type="image/png">
+
+  <!-- Google Fonts: Press Start 2P (8-bit Pixel), Space Grotesk, Inter, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CodeMirror 5 CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/clike/clike.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-cyber">
+
+  <!-- ════════════════════ CINEMATIC SPLASHSCREEN (LOGO REVEAL ANIMATION) ════════════════════ -->
+  <div id="app-splashscreen">
+    <div class="splash-reveal-container">
+      <div class="splash-ambient-glow"></div>
+      <div class="splash-brand-stage">
+        <div class="splash-logo-holder">
+          <div class="splash-halo"></div>
+          <img src="Assets/IF_CodingLab_LOGO.png" alt="Informatics 25 Logo" class="splash-if-logo">
+        </div>
+        <div class="splash-brand-text-wrap">
+          <h1 class="splash-codelab-title">Codelab</h1>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ TOP NAVIGATION BAR (Matching header.png) ════════════════════ -->
+  <header id="app-nav">
+    <div class="nav-container">
+      <div class="nav-left">
+        <a href="#" class="brand-logo-wrap" id="nav-brand-btn">
+          <img src="Assets/IF_CodingLab_LOGO.png" alt="Codelab Logo" class="brand-logo-img">
+          <div class="brand-text">
+            <span class="brand-title">Codelab</span>
+          </div>
+        </a>
+        <div class="nav-divider"></div>
+        <nav class="nav-menu">
+          <button class="nav-link" data-target="landing" id="nav-btn-landing">Explore</button>
+          <button class="nav-link user-auth-only" data-target="dashboard" id="nav-btn-dashboard" style="display: none;">Home</button>
+          <button class="nav-link" data-target="course" id="nav-btn-course">Course Map</button>
+          <button class="nav-link user-auth-only" data-target="assignment" id="nav-btn-assignment" style="display: none;">Assignment</button>
+          <button class="nav-link user-auth-only" data-target="leaderboard" id="nav-btn-leaderboard" style="display: none;">Leaderboard</button>
+          <button class="nav-link user-auth-only" data-target="materials" id="nav-btn-materials" style="display: none;">Articles</button>
+          <button class="nav-link" data-target="ide" id="nav-btn-ide">IDE</button>
+          <!-- Special Aslab Tab (Visible only when logged in as Aslab) -->
+          <button class="nav-link aslab-only-nav" data-target="aslab" id="nav-btn-aslab" style="display: none;">
+            <span class="aslab-crown">👑</span> Aslab Studio
+          </button>
+        </nav>
+      </div>
+
+      <div class="nav-right">
+        <!-- Search icon button -->
+        <button class="nav-icon-btn" id="nav-search-trigger-btn" title="Cari modul praktikum">
+          <svg viewBox="0 0 24 24" class="nav-svg-icon" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
+
+        <!-- Streak Badge (Shown when logged in) -->
+        <div class="streak-badge user-auth-only" id="nav-streak-box" title="Aktivitas Harian" style="display: none;">
+          <span class="streak-flame">🔥</span>
+          <span class="streak-count" id="nav-user-streak">0</span>
+        </div>
+
+        <!-- XP Badge (Shown when logged in) -->
+        <div class="xp-badge user-auth-only" id="nav-xp-box" title="Total XP Terkumpul" style="display: none;">
+          <span class="xp-star">⭐</span>
+          <span class="xp-count" id="nav-user-xp">0 XP</span>
+        </div>
+
+        <!-- User Profile Capsule Dropdown Trigger (Shown when logged in) -->
+        <div class="avatar-pill user-auth-only" id="btn-open-user-menu" title="Menu Pengguna" style="display: none;">
+          <div class="pixel-avatar" id="nav-user-avatar">👤</div>
+          <div class="avatar-info-mini">
+            <span class="avatar-name" id="nav-user-name">Praktikan</span>
+            <span class="avatar-role-tag" id="nav-user-role-badge">PRAKTIKAN</span>
+          </div>
+          <span class="avatar-chevron">▾</span>
+        </div>
+
+        <!-- Register / Login Button (Matching header.png yellow pixel button) -->
+        <button class="btn-pixel btn-nav-cta btn-header-register" id="btn-open-register-modal" title="Daftar Mahasiswa atau Login Aslab">
+          + Register
+        </button>
+
+        <!-- User Dropdown Menu (Styled strictly matching userclick.png) -->
+        <div class="user-dropdown-menu" id="user-dropdown-menu">
+          <button class="dropdown-item-btn" id="drop-btn-profile">
+            <svg class="drop-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Profile</span>
+          </button>
+          <button class="dropdown-item-btn" id="drop-btn-bookmarks">
+            <svg class="drop-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span>Bookmarks</span>
+          </button>
+          <button class="dropdown-item-btn" id="drop-btn-account">
+            <svg class="drop-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Account</span>
+          </button>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item-btn text-danger" id="drop-btn-signout">
+            <svg class="drop-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ════════════════════ MAIN SPA VIEW CONTAINER ════════════════════ -->
+  <div id="spa-container">
+
+    <!-- ════════════════════ PAGE 1: LANDING PAGE ════════════════════ -->
+    <section id="view-landing" class="app-page">
+      <!-- Fullscreen Clean GIF Background (Assets/8351164.gif) -->
+      <div class="landing-hero-backdrop">
+        <div class="landing-hero-content">
+          <div class="hero-retro-badge">PLATFORM PRAKTIKUM PEMROGRAMAN IF'25</div>
+          <h1 class="hero-main-title">Start Your<br>Coding Adventure</h1>
+          <p class="hero-tagline">Platform belajar praktikum pemrograman khusus tanpa internet</p>
+          
+          <div class="hero-cta-group">
+            <button class="btn-pixel btn-hero-gold" id="btn-landing-start">
+              🚀 Mulai Praktikum
+            </button>
+            <button class="btn-pixel btn-hero-ghost" id="btn-landing-explore">
+              🗺️ Lihat Modul
+            </button>
+          </div>
+
+          <div class="hero-credit-centered">
+            <span class="credit-lbl">MADE BY</span>
+            <h3 class="credit-title-centered">Informatics 25</h3>
+          </div>
+
+          <div class="hero-scroll-cue" id="hero-scroll-cue-btn" title="Scroll for more">
+            <span class="scroll-cue-text">Scroll for more</span>
+            <div class="scroll-arrow-circle">↓</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="landing-body-wrapper" id="landing-modules-anchor">
+        <!-- Section: Official 9 Modules Overview -->
+        <div class="landing-section-header">
+          <h2 class="landing-h2">9 Modul Praktikum</h2>
+          <p class="landing-sub">Kurikulum terstruktur mulai dari instalasi compiler, operasi input-output, tipe data, alur percabangan, array &amp; pointer, fungsi modular, manipulasi berkas, struct, hingga Command Line Argument.</p>
+        </div>
+
+        <!-- Filter / Category Tabs -->
+        <div class="landing-filter-bar">
+          <div class="search-input-wrap">
+            <span>🔍</span>
+            <input type="text" id="landing-search-input" placeholder="Cari materi: Pointer, Struct, File I/O, CLA...">
+          </div>
+          <div class="landing-chips">
+            <button class="l-chip active" data-cat="all">Semua Modul (9)</button>
+            <button class="l-chip" data-cat="Dasar Pemrograman">Dasar (1-3)</button>
+            <button class="l-chip" data-cat="Struktur Kontrol">Kontrol (4)</button>
+            <button class="l-chip" data-cat="Memori & Pointer">Pointer (5)</button>
+            <button class="l-chip" data-cat="Modular Programming">Fungsi (6)</button>
+            <button class="l-chip" data-cat="Manajemen File">File & Struct (7-8)</button>
+            <button class="l-chip" data-cat="Sistem & Terminal">CLA (9)</button>
+          </div>
+        </div>
+
+        <!-- Grid Cards for Materials -->
+        <div class="landing-cards-grid" id="landing-cards-grid">
+          <!-- Populated dynamically from GET /materials -->
+        </div>
+
+        <!-- Practicum Stats Banner -->
+        <div class="adventure-banner">
+          <h3 class="adventure-title">Lingkungan Praktikum Mandiri Jaringan Lokal</h3>
+          <div class="adventure-stats-row">
+            <div class="stat-pill">
+              <span class="stat-num">9</span>
+              <span class="stat-label">Modul Praktikum</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-num">GCC Compiler</span>
+              <span class="stat-label">Bahasa C</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-num">100% Offline</span>
+              <span class="stat-label">Khusus Tanpa Internet</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-num">9 Tugas</span>
+              <span class="stat-label">Assignment Terintegrasi</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature Highlights (Clean Semester 1) -->
+        <div class="feature-rows">
+          <div class="feature-card">
+            <div class="feature-text">
+              <h3 class="feature-title">⚡ Kompilator C &amp; Lingkungan Eksekusi Instan</h3>
+              <p>Setiap kode C yang Anda tulis dikompilasi secara langsung dan aman di jaringan lokal menggunakan GCC. Menampilkan output dan pesan error secara real-time di terminal interaktif.</p>
+            </div>
+            <div class="feature-visual">
+              <div class="visual-terminal-preview">
+                <span class="valgrind-pass">$ gcc main.c -o main</span>
+                <span class="valgrind-pass">$ ./main</span>
+                <span class="valgrind-pass">====================================</span>
+                <span class="valgrind-pass">  Codelab by Informatics 25</span>
+                <span class="valgrind-pass">  Eksekusi Program Berhasil!</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="feature-card reverse">
+            <div class="feature-text">
+              <h3 class="feature-title">📝 Tugas Praktikum Terintegrasi &amp; Portal Aslab</h3>
+              <p>Mahasiswa dapat melihat daftar tugas di halaman <strong>Assignment</strong> dan langsung mengerjakannya di IDE. Asisten Lab memiliki portal khusus dengan otentikasi PIN untuk mengelola kurikulum dan memantau progres praktikan.</p>
+            </div>
+            <div class="feature-visual">
+              <div class="visual-badge-showcase">
+                <span class="v-badge">👨‍💻 Akun Praktikan: Khusus Mahasiswa</span>
+                <span class="v-badge">🔒 Aslab Studio: Proteksi PIN Khusus</span>
+                <span class="v-badge">📊 Database Submission Lokal Aktif</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ════════════════════ FOOTER (Matching footer.png) ════════════════════ -->
+        <footer id="app-footer">
+          <div class="footer-container">
+            <!-- Top Row: Brand & Made with -->
+            <div class="footer-top-row">
+              <div class="footer-brand">
+                <img src="Assets/IF_CodingLab_LOGO.png" alt="Codelab Logo" class="footer-logo-img">
+                <span class="footer-brand-title">Codelab</span>
+              </div>
+              <div class="footer-made-with">
+                Made with <span class="footer-heart">❤️</span> by <strong>Informatics 25</strong>
+              </div>
+            </div>
+
+            <!-- Links Grid (4 Columns) -->
+            <div class="footer-links-grid">
+              <div class="footer-col">
+                <h4 class="footer-col-title">CODELAB IF'25</h4>
+                <ul class="footer-link-list">
+                  <li><a href="#" class="footer-nav-link" data-target="landing">Tentang Praktikum</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="course">Silabus Kurikulum</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="assignment">Daftar Tugas</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="ide">GCC Web Sandbox</a></li>
+                </ul>
+              </div>
+
+              <div class="footer-col">
+                <h4 class="footer-col-title">PRAKTIKUM</h4>
+                <ul class="footer-link-list">
+                  <li><a href="#" class="footer-nav-link" data-target="course">9 Modul Bahasa C</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="assignment">Tugas &amp; Submission</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="ide">Terminal Interaktif</a></li>
+                  <li><a href="#" class="footer-nav-link" id="footer-btn-open-chat">Live Chat Aslab</a></li>
+                </ul>
+              </div>
+
+              <div class="footer-col">
+                <h4 class="footer-col-title">MODUL DASAR</h4>
+                <ul class="footer-link-list">
+                  <li><a href="#" class="footer-nav-link" data-target="materials" data-idx="0">01. Instalasi GCC</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="materials" data-idx="1">02. Input &amp; Output</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="materials" data-idx="2">03. Variabel &amp; Data</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="materials" data-idx="3">04. Percabangan IF</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="materials" data-idx="4">05. Array &amp; Pointer</a></li>
+                </ul>
+              </div>
+
+              <div class="footer-col">
+                <h4 class="footer-col-title">MODUL LANJUTAN</h4>
+                <ul class="footer-link-list">
+                  <li><a href="#" class="footer-nav-link" data-target="materials" data-idx="5">06. Fungsi Modular</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="materials" data-idx="6">07. Manipulasi File</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="materials" data-idx="7">08. Struct &amp; Typedef</a></li>
+                  <li><a href="#" class="footer-nav-link" data-target="materials" data-idx="8">09. CLI Arguments</a></li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Bottom Row: Copyright & Socials (Discord & Instagram) -->
+            <div class="footer-bottom-row">
+              <div class="footer-copyright">
+                © 2026 Informatics 25. All Rights Reserved.
+              </div>
+              <div class="footer-social-links">
+                <!-- Instagram Link -->
+                <a href="https://www.instagram.com/informatikausk25/" target="_blank" rel="noopener noreferrer" class="footer-social-btn" title="Instagram Informatika USK 25" aria-label="Instagram">
+                  <svg class="footer-social-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                  <span>Instagram</span>
+                </a>
+
+                <!-- Discord Link -->
+                <a href="https://discord.gg/2PFA7kBJcj" target="_blank" rel="noopener noreferrer" class="footer-social-btn" title="Discord Komunitas Informatics 25" aria-label="Discord">
+                  <svg class="footer-social-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.893.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                  </svg>
+                  <span>Discord</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </section>
+
+    <!-- ════════════════════ PAGE 2: DASHBOARD / HOME ════════════════════ -->
+    <section id="view-dashboard" class="app-page active-page">
+      <div class="dashboard-layout">
+        <!-- Main Column -->
+        <div class="dashboard-main-col">
+          <!-- Jump Back In Card -->
+          <div class="jump-back-card">
+            <div class="jump-header">
+              <span class="jump-tag">⚡ LANJUTKAN PRAKTIKUM</span>
+              <span class="jump-percentage" id="dash-user-overall-prog">Modul Aktif</span>
+            </div>
+            <div class="jump-body">
+              <div class="jump-info">
+                <span class="jump-lang-label" id="dash-active-lang-badge">BAHASA C (GCC)</span>
+                <h2 class="jump-course-name" id="dash-active-course-title">01. Instalasi &amp; Kompilasi Bahasa C</h2>
+                <p class="jump-next-exercise">Latihan: <strong id="dash-next-exercise-label">Struktur Anatomi Program C</strong></p>
+              </div>
+              <button class="btn-pixel btn-hero-gold" id="dash-btn-continue">
+                Lanjut Koding →
+              </button>
+            </div>
+          </div>
+
+          <!-- Section: Progress Kurikulum 9 Modul -->
+          <div class="dash-section">
+            <div class="dash-section-header-row">
+              <h3 class="dash-section-title">Kurikulum Praktikum Pemrograman</h3>
+              <a href="#" class="dash-link-more" id="btn-dash-view-all-course">Buka Peta Kurikulum</a>
+            </div>
+            <div class="progress-cards-row" id="dash-progress-cards">
+              <!-- Populated dynamically from 9 modules -->
+            </div>
+          </div>
+
+          <!-- Section: Jadwal & Pengumuman Lab -->
+          <div class="dash-section">
+            <h3 class="dash-section-title">Informasi &amp; Panduan Lab IF'25</h3>
+            <div class="community-cards-grid" id="dash-lab-info-grid">
+              <div class="comm-card">
+                <div class="comm-author">
+                  <span>📢</span>
+                  <span>Pengumuman Aslab • Lab Pemrograman</span>
+                </div>
+                <h4 class="comm-title">Petunjuk Praktikum Pemrograman C</h4>
+                <p class="comm-snippet">Tulis kode program secara mandiri sesuai spesifikasi tugas. Gunakan fungsi standar seperti <code>printf()</code> dan <code>scanf()</code> dengan format specifier yang sesuai.</p>
+                <div class="comm-footer">
+                  <span>🗓️ Modul 1-9</span>
+                  <span>📍 Lab Komputer Terpadu</span>
+                </div>
+              </div>
+
+              <div class="comm-card">
+                <div class="comm-author">
+                  <span>💡</span>
+                  <span>Tips Belajar • Semester 1</span>
+                </div>
+                <h4 class="comm-title">Eksplorasi Bebas di Menu IDE</h4>
+                <p class="comm-snippet">Gunakan tab <strong>IDE</strong> untuk mencoba contoh kode, menguji sintaksis baru, atau bereksperimen dengan algoritma tanpa instruksi modul yang mengikat.</p>
+                <div class="comm-footer">
+                  <span>⭐ +50 XP Tiap Modul</span>
+                  <span>⚡ GCC Fast Execution</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar Column: Profile & Lab Stats -->
+        <div class="dashboard-sidebar-col">
+          <!-- Profile Overview Card -->
+          <div class="side-widget user-overview-card">
+            <div class="side-user-header">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="side-user-avatar" id="side-user-avatar">👤</div>
+                <div>
+                  <h4 class="side-name" id="side-user-name">Praktikan Baru</h4>
+                  <span class="side-level" id="side-user-level-label">Silakan Daftar</span>
+                </div>
+              </div>
+              <button class="btn-side-edit" id="btn-switch-user-side">Kelola Akun</button>
+            </div>
+
+            <div class="side-stats-grid">
+              <div class="side-stat-box">
+                <span class="side-stat-val gold" id="side-stat-xp">0</span>
+                <span class="side-stat-lbl">Total XP</span>
+              </div>
+              <div class="side-stat-box">
+                <span class="side-stat-val cyan" id="side-stat-completed">0 / 9</span>
+                <span class="side-stat-lbl">Modul Selesai</span>
+              </div>
+              <div class="side-stat-box">
+                <span class="side-stat-val green" id="side-stat-streak">0</span>
+                <span class="side-stat-lbl">Day Streak 🔥</span>
+              </div>
+              <div class="side-stat-box">
+                <span class="side-stat-val orange" id="side-stat-badges">0</span>
+                <span class="side-stat-lbl">Badges</span>
+              </div>
+            </div>
+
+            <button class="btn-pixel btn-sandbox btn-full-width" id="btn-view-course-map-side">
+              🗺️ Buka Roadmap Lengkap
+            </button>
+
+            <!-- Aslab Quick Access (Visible only for Aslab) -->
+            <div class="aslab-only-block" style="display: none; margin-top: 6px;">
+              <button class="btn-pixel btn-primary-action btn-full-width" id="btn-open-aslab-studio-side">
+                👑 Buka Aslab Studio
+              </button>
+            </div>
+          </div>
+
+          <!-- Lab Schedule Widget -->
+          <div class="side-widget lab-schedule-widget">
+            <h4 class="side-widget-title">JADWAL PRAKTIKUM IF'25</h4>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="schedule-item">
+                <div class="schedule-date">
+                  <span class="mo">SESI</span>
+                  <span class="da">01</span>
+                </div>
+                <div class="schedule-info">
+                  <strong>Modul 1-3: Dasar C &amp; I/O</strong>
+                  <span>Kompilasi GCC &amp; Tipe Data</span>
+                </div>
+              </div>
+              <div class="schedule-item">
+                <div class="schedule-date">
+                  <span class="mo">SESI</span>
+                  <span class="da">02</span>
+                </div>
+                <div class="schedule-info">
+                  <strong>Modul 4-6: Pointer &amp; Fungsi</strong>
+                  <span>Alamat Memori &amp; Passing Pointer</span>
+                </div>
+              </div>
+              <div class="schedule-item">
+                <div class="schedule-date">
+                  <span class="mo">SESI</span>
+                  <span class="da">03</span>
+                </div>
+                <div class="schedule-info">
+                  <strong>Modul 7-9: File, Struct &amp; CLA</strong>
+                  <span>Manajemen Berkas &amp; Argument CLI</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ PAGE 3: COURSE ROADMAP PAGE ════════════════════ -->
+    <section id="view-course" class="app-page">
+      <div class="course-page-hero">
+        <div class="course-hero-content">
+          <div class="course-pill-tags">
+            <span class="pill-lvl">INFORMATICS 25</span>
+            <span class="pill-type">KURIKULUM RESMI</span>
+          </div>
+          <h1 class="course-main-heading">Praktikum Pemrograman &amp; Sistem</h1>
+          <p class="course-main-desc">Kuasai 9 modul resmi: struktur program C, input-output, tipe data, branching conditional, array &amp; pointer, pemrograman modular fungsi, stream berkas file I/O, struct &amp; typedef, dan command line arguments.</p>
+          <div class="course-hero-actions">
+            <button class="btn-pixel btn-hero-gold" id="btn-resume-course">
+              ▶️ Lanjut Praktikum
+            </button>
+            <span class="course-duration-hint">⏱️ 9 Modul Lengkap • Semester 1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="course-layout-wrapper">
+        <!-- Curriculum Chapters Tree -->
+        <div class="course-curriculum-col">
+          <h3 style="font-family: var(--font-pixel); font-size: 1rem; margin-bottom: 8px;">Daftar Bab &amp; Modul Praktikum</h3>
+          <div id="course-chapters-tree">
+            <!-- Populated dynamically from 9 modules -->
+          </div>
+        </div>
+
+        <!-- Course Sidebar -->
+        <div class="course-sidebar-col">
+          <div class="course-side-box">
+            <h4 class="side-box-title">PROGRES KURIKULUM</h4>
+            <div class="progress-bar-labeled">
+              <div class="bar-header">
+                <span>Modul Terselesaikan</span>
+                <strong id="course-progress-numbers">0 / 9</strong>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" id="course-progress-bar-fill" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="course-side-box">
+            <div class="side-box-title-row">
+              <h4 class="side-box-title">BADGES PENCAPAIAN</h4>
+              <span class="badge-count-tag" id="course-badge-count-lbl">0 / 9</span>
+            </div>
+            <div class="badges-grid-icons">
+              <div class="badge-icon-item locked" id="badge-icon-1" title="Modul 1: Hello World">🌍</div>
+              <div class="badge-icon-item locked" id="badge-icon-2" title="Modul 2: I/O Master">🎯</div>
+              <div class="badge-icon-item locked" id="badge-icon-3" title="Modul 3: Data Architect">🛡️</div>
+              <div class="badge-icon-item locked" id="badge-icon-4" title="Modul 4: Logic Decision">🔄</div>
+              <div class="badge-icon-item locked" id="badge-icon-5" title="Modul 5: Pointer Traversal">🔒</div>
+              <div class="badge-icon-item locked" id="badge-icon-6" title="Modul 6: Modular Functions">🔒</div>
+              <div class="badge-icon-item locked" id="badge-icon-7" title="Modul 7: File I/O Master">🔒</div>
+              <div class="badge-icon-item locked" id="badge-icon-8" title="Modul 8: Struct & Typedef">🔒</div>
+              <div class="badge-icon-item locked" id="badge-icon-9" title="Modul 9: CLI Argument Master">🔒</div>
+            </div>
+          </div>
+
+          <div class="course-side-box">
+            <h4 class="side-box-title">REFERENSI RESMI MIT OCW</h4>
+            <ul class="cheatsheet-list">
+              <li><a href="https://ocw.mit.edu/courses/6-s096-introduction-to-c-and-c-january-iap-2013/" target="_blank" rel="noopener">🌐 MIT 6.S096: Intro to C/C++ ↗</a></li>
+              <li><a href="https://ocw.mit.edu/courses/6-087-practical-programming-in-c-january-iap-2010/pages/syllabus/" target="_blank" rel="noopener">🌐 MIT 6.087: Practical C Syllabus ↗</a></li>
+              <li><a href="#" onclick="alert('Gunakan printf(\"%d\", val) dan scanf(\"%d\", &val)'); return false;">📖 Panduan Format Specifiers C</a></li>
+              <li><a href="#" onclick="alert('Operator & = address-of, * = dereference'); return false;">⚡ Ringkasan Operator Pointer C</a></li>
+              <li><a href="#" onclick="alert('Buka dengan fopen(), tulis fprintf(), tutup fclose()'); return false;">📁 Panduan Operasi File I/O</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ PAGE 4: ASSIGNMENT PAGE ════════════════════ -->
+    <section id="view-assignment" class="app-page">
+      <div class="assignment-hero-banner">
+        <div class="assignment-hero-content">
+          <span class="assignment-tag-badge">📋 TUGAS &amp; EVALUASI PRAKTIKUM</span>
+          <h1 class="assignment-main-heading">Daftar Tugas Praktikum IF'25</h1>
+          <p class="assignment-subheading">Selesaikan tugas praktikum pemrograman C sesuai dengan modul masing-masing. Buka tugas langsung di IDE untuk mulai menulis kode dan mengujinya.</p>
+        </div>
+      </div>
+
+      <div class="assignment-layout-wrapper">
+        <div class="assignment-grid" id="assignment-cards-grid">
+          <!-- Populated dynamically from GET /assignments -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ PAGE 5: MATERIALS / ARTICLE PAGE ════════════════════ -->
+    <section id="view-materials" class="app-page">
+      <div class="article-page-wrapper">
+        <div class="article-top-nav">
+          <div class="article-breadcrumb-info">
+            <button class="btn-pixel btn-back" id="btn-back-from-article">← Kembali ke Roadmap</button>
+            <span class="art-sep">/</span>
+            <span class="art-tag">ARTIKEL TEORI</span>
+            <span class="art-sep">/</span>
+            <span class="art-title" id="article-page-header-title">01. Instalasi &amp; Kompilasi Bahasa C</span>
+          </div>
+          <button class="btn-pixel btn-primary-action" id="btn-open-article-in-ide">
+            💻 Kerjakan Latihan di Workspace
+          </button>
+        </div>
+
+        <div class="article-reading-container">
+          <article class="article-main-body" id="article-full-content">
+            <!-- Populated dynamically with full HTML article content -->
+          </article>
+        </div>
+
+        <div class="article-bottom-bar">
+          <button class="btn-pixel btn-back" id="btn-article-prev">← Modul Sebelumnya</button>
+          <span class="article-reading-step" id="article-reading-step-lbl">Modul 1 dari 9</span>
+          <button class="btn-pixel btn-primary-action" id="btn-article-next">Modul Selanjutnya →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ PAGE 6: PURE IDE (FREE EXPLORATION + SCRATCHPAD) ════════════════════ -->
+    <section id="view-ide" class="app-page">
+      <div class="pure-ide-wrapper">
+        <div class="pure-ide-topbar">
+          <div class="pure-ide-topbar-left">
+            <span class="ide-tag-badge">🚀 IDE</span>
+            <button class="editor-btn-secondary" id="btn-toggle-ide-notes" title="Buka / Tutup Panel Catatan & Coret-coret">
+              📝 Scratchpad &amp; Notes
+            </button>
+            <div class="editor-file-tabs">
+              <button class="editor-tab active" id="pure-tab-lang-c" data-lang="c">
+                <span class="file-lang-dot c-dot">C</span>
+                <span>main.c</span>
+              </button>
+              <button class="editor-tab" id="pure-tab-lang-python" data-lang="python">
+                <span class="file-lang-dot py-dot">Py</span>
+                <span>main.py</span>
+              </button>
+            </div>
+          </div>
+          <div class="pure-ide-topbar-right">
+            <button class="editor-btn-secondary" id="btn-pure-reset" title="Kosongkan Editor">↺ Kosongkan</button>
+            <button class="editor-btn-secondary" id="btn-pure-copy" title="Salin Kode">📋 Salin</button>
+            <button class="btn-pixel btn-run-code" id="btn-pure-run">
+              ▶ RUN
+            </button>
+            <button class="btn-pixel btn-submit-task-action" id="btn-pure-submit-task" title="Submit Tugas untuk Live Score & Evaluasi Realtime">
+              🚀 Submit Tugas
+            </button>
+          </div>
+        </div>
+
+        <div class="pure-ide-workspace-split" id="pure-ide-workspace-split">
+          <!-- Left: Scratchpad / Notes Area (Tempat Coret-coret & Analisis) -->
+          <div class="pure-notes-sidebar" id="pure-ide-notes-sidebar">
+            <div class="pure-notes-header">
+              <div class="notes-header-left">
+                <span class="notes-icon">📝</span>
+                <span class="notes-title">Catatan &amp; Coretan</span>
+              </div>
+              <div class="notes-header-actions">
+                <span class="notes-autosave-badge" id="notes-autosave-status">💾 Tersimpan</span>
+                <button class="notes-mini-btn" id="btn-copy-scratchpad" title="Salin semua catatan">📋</button>
+                <button class="notes-mini-btn" id="btn-clear-scratchpad" title="Bersihkan catatan">🧹</button>
+              </div>
+            </div>
+
+            <!-- Quick Template Chips -->
+            <div class="notes-templates-bar">
+              <button class="note-chip-btn" data-template="todo">☑️ To-Do</button>
+              <button class="note-chip-btn" data-template="algo">💡 Logika</button>
+              <button class="note-chip-btn" data-template="vars">📊 Variabel</button>
+              <button class="note-chip-btn" data-template="testcase">🧪 Test Case</button>
+            </div>
+
+            <div class="pure-notes-body">
+              <textarea id="pure-scratchpad-area" class="pure-scratchpad-textarea" placeholder="Tulis catatan, coret-coret logika kode, pseudocode, atau daftar test case di sini... (Tersimpan otomatis)"></textarea>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="pure-notes-divider" id="pure-notes-divider" title="Geser untuk mengatur lebar panel catatan"></div>
+
+          <!-- Right: Code Editor + Terminal -->
+          <div class="pure-ide-main" id="pure-ide-main">
+            <!-- CodeMirror Mount Point for Pure IDE -->
+            <div id="pure-codemirror-mount"></div>
+
+            <!-- Terminal for Pure IDE -->
+            <div class="pure-terminal-pane">
+              <div class="terminal-bar">
+                <div class="terminal-left-info">
+                  <span class="terminal-title-text">TERMINAL OUTPUT</span>
+                  <span class="terminal-sub-info" id="pure-term-metrics">ready</span>
+                </div>
+                <div class="terminal-actions">
+                  <button class="term-action-btn" id="btn-pure-copy-term">Salin Output</button>
+                  <button class="term-action-btn" id="btn-pure-clear-term">Bersihkan</button>
+                </div>
+              </div>
+              <div class="terminal-body" id="pure-terminal-content">
+                <p class="term-line info-line">Codelab IDE Siap. Tulis kode program Anda secara bebas dan klik RUN.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ PAGE 7: COURSE WORKSPACE (GUIDED EXERCISE) ════════════════════ -->
+    <section id="view-workspace" class="app-page">
+      <div id="workspace-topbar">
+        <div class="workspace-topbar-left">
+          <button class="btn-pixel btn-back" id="btn-back-dashboard">← Roadmap</button>
+          <div class="workspace-breadcrumbs">
+            <span class="crumb-root">Codelab</span>
+            <span class="crumb-sep">/</span>
+            <span class="crumb-lang" id="crumb-lang-badge">C</span>
+            <span class="crumb-sep">/</span>
+            <span class="crumb-title" id="crumb-module-title">01. Instalasi &amp; Kompilasi Bahasa C</span>
+          </div>
+        </div>
+
+        <div class="workspace-topbar-center">
+          <div class="material-stepper">
+            <button class="step-nav-btn" id="btn-prev-material" title="Modul Sebelumnya">◀</button>
+            <span class="step-counter" id="workspace-step-counter">Modul 1 / 9</span>
+            <button class="step-nav-btn" id="btn-next-material" title="Modul Selanjutnya">▶</button>
+          </div>
+        </div>
+
+        <div class="workspace-topbar-right">
+          <div class="exec-badge" id="exec-status-badge" data-status="ready">
+            <span class="exec-badge-dot"></span>
+            <span id="exec-status-text">Terminal Siap</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="split-workspace">
+        <!-- Left Panel: Exercise Instructions & Theory -->
+        <div id="panel-left">
+          <div class="panel-header-tab">
+            <span class="panel-tag">PETUNJUK PRAKTIKUM</span>
+            <button class="panel-mini-btn" id="btn-reset-exercise-view" title="Reset Panduan">↺</button>
+          </div>
+          <div class="panel-scroll-content">
+            <div class="material-header-block">
+              <h2 class="exercise-heading" id="mat-display-title">01. Instalasi &amp; Kompilasi Bahasa C</h2>
+              <div class="exercise-meta">
+                <span class="badge-lang-tag" id="mat-display-lang">Bahasa C (GCC)</span>
+                <span class="badge-time-tag">⏱️ ~15 Menit</span>
+                <span class="badge-xp-tag">+50 XP</span>
+              </div>
+            </div>
+
+            <div class="exercise-body-html" id="mat-display-body">
+              <!-- Loaded from active material -->
+            </div>
+
+            <!-- Task Checklist -->
+            <div class="instruction-callout">
+              <div class="callout-header">
+                <span>🎯</span>
+                <h4>Tugas Praktikum</h4>
+              </div>
+              <p>Tulis kode program pada editor di sebelah kanan sesuai petunjuk di atas, lalu jalankan dengan tombol <strong>RUN</strong>.</p>
+              <div class="task-checklist">
+                <label class="check-item">
+                  <input type="checkbox" id="task-chk-1" checked>
+                  <span>Pahami instruksi dan fungsi program</span>
+                </label>
+                <label class="check-item">
+                  <input type="checkbox" id="task-chk-2">
+                  <span>Tulis kode program pada text editor</span>
+                </label>
+                <label class="check-item">
+                  <input type="checkbox" id="task-chk-3">
+                  <span>Jalankan dan pastikan program berhasil dieksekusi</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Draggable Divider -->
+        <div id="workspace-divider" title="Geser untuk mengatur lebar panel"></div>
+
+        <!-- Right Panel: CodeMirror Editor & Terminal Output -->
+        <div id="panel-right">
+          <!-- Editor File Tab Bar -->
+          <div class="editor-action-bar">
+            <div class="editor-file-tabs">
+              <button class="editor-tab active" id="tab-lang-c" data-lang="c">
+                <span class="file-lang-dot c-dot">C</span>
+                <span>main.c</span>
+              </button>
+              <button class="editor-tab" id="tab-lang-python" data-lang="python">
+                <span class="file-lang-dot py-dot">Py</span>
+                <span>main.py</span>
+              </button>
+            </div>
+            <div class="editor-actions">
+              <button class="editor-btn-secondary" id="btn-reset-code" title="Kosongkan Editor">↺ Kosongkan</button>
+              <button class="editor-btn-secondary" id="btn-copy-code" title="Salin kode">📋 Salin</button>
+              <button class="btn-pixel btn-run-code" id="btn-run-code">
+                ▶ RUN
+              </button>
+            </div>
+          </div>
+
+          <!-- CodeMirror Editor Mount Point -->
+          <div id="codemirror-mount-point"></div>
+
+          <!-- Terminal Output Pane -->
+          <div id="terminal-pane">
+            <div class="terminal-bar">
+              <div class="terminal-left-info">
+                <span class="terminal-title-text">TERMINAL OUTPUT</span>
+                <span class="terminal-sub-info" id="term-exec-metrics">ready</span>
+              </div>
+              <div class="terminal-actions">
+                <button class="term-action-btn" id="btn-copy-terminal">Salin Output</button>
+                <button class="term-action-btn" id="btn-clear-terminal">Bersihkan</button>
+              </div>
+            </div>
+            <div class="terminal-body" id="terminal-content-box">
+              <p class="term-line info-line">Codelab Siap. Tulis kode program Anda dan klik RUN untuk mengompilasi.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ PAGE 8: USER PROFILE PAGE (Matching Erumaa.png) ════════════════════ -->
+    <section id="view-profile" class="app-page">
+      <div class="profile-page-wrapper">
+        <!-- Customizable Cover Banner (Clean Standalone Banner Card) -->
+        <div class="profile-cover-banner" id="profile-banner-box">
+          <div class="profile-banner-bg" id="profile-banner-bg">
+            <div class="profile-pixel-stars"></div>
+            <div class="profile-banner-overlay"></div>
+          </div>
+          <button class="btn-pixel btn-change-banner-pill" id="btn-change-banner-direct" title="Ganti Tema Banner">
+            🎨 Ganti Banner
+          </button>
+        </div>
+
+        <!-- Separated Profile Header Card (Clear separation from banner) -->
+        <div class="profile-identity-card">
+          <div class="profile-identity-left">
+            <div class="profile-avatar-holder" id="btn-change-avatar-direct" title="Klik untuk ganti avatar">
+              <span id="prof-avatar-display" class="prof-avatar-emoji">👤</span>
+              <div class="avatar-hover-hint">✏️</div>
+            </div>
+            <div class="profile-identity-info">
+              <div class="profile-name-row">
+                <h1 class="profile-fullname" id="prof-name-display">Praktikan Baru</h1>
+                <span class="prof-role-badge" id="prof-role-display">PRAKTIKAN</span>
+              </div>
+              <span class="profile-username" id="prof-username-display">@belum_terdaftar</span>
+              <div class="profile-meta-row">
+                <span class="prof-meta-item">🎓 NIM: <strong id="prof-nim-display">-</strong></span>
+                <span class="prof-meta-item">🗓️ Angkatan: <strong>Informatics 25</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="profile-identity-right">
+            <button class="btn-pixel btn-hero-ghost" id="btn-edit-profile-action">
+              ✏️ Edit Profile
+            </button>
+          </div>
+        </div>
+
+        <div class="profile-main-layout">
+          <!-- Left / Main Column -->
+          <div class="profile-main-col">
+            <!-- Profile Nav Tabs -->
+            <div class="profile-tabs-bar">
+              <button class="prof-tab-btn active" data-tab="overview" id="prof-tab-btn-overview">Overview</button>
+              <button class="prof-tab-btn" data-tab="assignments" id="prof-tab-btn-assignments">Tugas Praktikum</button>
+            </div>
+
+            <!-- Tab Content: Overview -->
+            <div class="prof-tab-content active" id="prof-content-overview">
+              <div class="prof-section-card">
+                <h3 class="prof-card-title">Modul Praktikum Terselesaikan</h3>
+                <div class="prof-completed-list" id="prof-completed-materials-list">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+
+              <div class="prof-section-card">
+                <h3 class="prof-card-title">Eksplorasi Praktikum Pemrograman C</h3>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 14px;">Tulis program C dan pelajari 9 modul praktikum di Roadmap Kurikulum untuk mengumpulkan XP dan membuka seluruh badges.</p>
+                <button class="btn-pixel btn-primary-action" id="btn-prof-goto-course">
+                  🗺️ Buka Peta Kurikulum →
+                </button>
+              </div>
+            </div>
+
+            <!-- Tab Content: Assignments -->
+            <div class="prof-tab-content" id="prof-content-assignments" style="display: none;">
+              <div class="prof-section-card">
+                <h3 class="prof-card-title">Daftar Evaluasi Tugas Lab</h3>
+                <div class="prof-assignments-list" id="prof-assignments-list">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Stats, Achievements, Skills (Matching Erumaa.png) -->
+          <div class="profile-side-col">
+            <!-- Mini User Card -->
+            <div class="prof-side-widget">
+              <div class="prof-side-user-header">
+                <div class="prof-side-avatar" id="prof-mini-avatar">👤</div>
+                <div>
+                  <strong class="prof-side-name" id="prof-mini-name">Praktikan Baru</strong>
+                  <span class="prof-side-lvl" id="prof-mini-lvl">Level 1</span>
+                </div>
+              </div>
+              <div class="prof-side-stats-grid">
+                <div class="prof-stat-box">
+                  <span class="prof-stat-icon">⭐</span>
+                  <div>
+                    <strong class="prof-stat-val" id="prof-side-xp">0</strong>
+                    <span class="prof-stat-lbl">Total XP</span>
+                  </div>
+                </div>
+                <div class="prof-stat-box">
+                  <span class="prof-stat-icon">🛡️</span>
+                  <div>
+                    <strong class="prof-stat-val" id="prof-side-rank">Cadet</strong>
+                    <span class="prof-stat-lbl">Rank</span>
+                  </div>
+                </div>
+                <div class="prof-stat-box">
+                  <span class="prof-stat-icon">🏅</span>
+                  <div>
+                    <strong class="prof-stat-val" id="prof-side-badges">0</strong>
+                    <span class="prof-stat-lbl">Badges</span>
+                  </div>
+                </div>
+                <div class="prof-stat-box">
+                  <span class="prof-stat-icon">🔥</span>
+                  <div>
+                    <strong class="prof-stat-val" id="prof-side-streak">0</strong>
+                    <span class="prof-stat-lbl">Day streak</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Achievements Box -->
+            <div class="prof-side-widget">
+              <h4 class="prof-widget-title">Achievements</h4>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 12px;">Ingin mendapatkan badge prestasi praktikum? Selesaikan seluruh modul di Course Map!</p>
+              <button class="btn-pixel btn-sandbox btn-full-width" id="btn-prof-explore-courses">
+                Explore courses
+              </button>
+            </div>
+
+            <!-- Skills Box -->
+            <div class="prof-side-widget">
+              <h4 class="prof-widget-title">Skills</h4>
+              <div class="prof-skills-chips">
+                <span class="skill-chip">C (GCC)</span>
+                <span class="skill-chip">INPUT/OUTPUT</span>
+                <span class="skill-chip">POINTERS</span>
+                <span class="skill-chip">MODULAR FUNCTIONS</span>
+                <span class="skill-chip">FILE I/O</span>
+                <span class="skill-chip">STRUCT &amp; TYPEDEF</span>
+                <span class="skill-chip">COMMAND LINE ARGS</span>
+                <span class="skill-chip">PYTHON</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ PAGE: LEADERBOARD & LIVE SCORE ════════════════════ -->
+    <section id="view-leaderboard" class="app-page">
+      <div class="leaderboard-hero-banner">
+        <div class="leaderboard-hero-content">
+          <div class="leaderboard-pill-tags">
+            <span class="pill-lvl">🏆 HALL OF FAME</span>
+            <span class="pill-type">REAL-TIME RANKING</span>
+          </div>
+          <h1 class="leaderboard-main-h1">Leaderboard &amp; Live Score IF'25</h1>
+          <p class="leaderboard-sub">Pantau klasemen mahasiswa, perolehan XP praktikum, dan skor evaluasi pengerjaan tugas secara langsung.</p>
+        </div>
+      </div>
+
+      <div class="leaderboard-layout-wrapper">
+        <!-- Top 3 Podium Cards -->
+        <div class="leaderboard-podium-grid" id="leaderboard-podium-grid">
+          <!-- Populated dynamically (2nd, 1st, 3rd) -->
+        </div>
+
+        <!-- Leaderboard Navigation Tabs -->
+        <div class="leaderboard-tabs-bar">
+          <div class="leaderboard-nav-btns">
+            <button class="lead-tab-btn active" data-lead-tab="xp" id="btn-lead-tab-xp">
+              🏆 Klasemen XP Mahasiswa
+            </button>
+            <button class="lead-tab-btn" data-lead-tab="livescore" id="btn-lead-tab-live">
+              ⚡ Live Scoreboard Tugas
+            </button>
+          </div>
+          <div class="leaderboard-actions-right">
+            <input type="text" id="lead-search-input" class="lead-search-input" placeholder="🔍 Cari nama / NIM praktikan...">
+            <button class="btn-pixel btn-primary-action" id="btn-refresh-leaderboard">
+              🔄 Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab 1: XP Leaderboard Table -->
+        <div class="leaderboard-view-pane active" id="pane-lead-xp">
+          <div class="lead-table-card">
+            <table class="lead-table">
+              <thead>
+                <tr>
+                  <th style="width: 70px;">Rank</th>
+                  <th>Praktikan</th>
+                  <th>NIM</th>
+                  <th>Tier &amp; Badge</th>
+                  <th>Modul Selesai</th>
+                  <th style="text-align: right;">Total XP</th>
+                </tr>
+              </thead>
+              <tbody id="lead-xp-tbody">
+                <!-- Populated dynamically from GET /leaderboard -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 2: Live Scoreboard Feed -->
+        <div class="leaderboard-view-pane" id="pane-lead-livescore" style="display: none;">
+          <div class="lead-table-card">
+            <div class="live-score-status-bar">
+              <span class="live-pulse-dot"></span>
+              <strong style="color: var(--accent-cyan);">Sesi Evaluasi Live Aktif</strong>
+              <span style="color: var(--text-muted); font-size: 0.82rem;">— Nilai tugas dihitung langsung dari tes compiler &amp; eksekusi kode di IDE</span>
+            </div>
+            <table class="lead-table">
+              <thead>
+                <tr>
+                  <th>Waktu</th>
+                  <th>Praktikan</th>
+                  <th>NIM</th>
+                  <th>Tugas Praktikum</th>
+                  <th>Runtime</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Skor</th>
+                </tr>
+              </thead>
+              <tbody id="lead-livescore-tbody">
+                <!-- Populated dynamically from GET /livescore -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ PAGE 9: ASLAB MANAGEMENT STUDIO ════════════════════ -->
+    <section id="view-aslab" class="app-page">
+      <div class="aslab-studio-wrapper">
+        <div class="aslab-header-banner">
+          <div>
+            <span class="aslab-badge" id="aslab-active-badge">👑 ASISTEN LABORATORIUM PORTAL</span>
+            <h1 class="aslab-main-h1" id="aslab-studio-title">Aslab Studio Management</h1>
+            <p class="aslab-sub" id="aslab-studio-subtitle">Kelola kurikulum modul, tugas praktikum, artikel teori, dan pantau riwayat submission mahasiswa secara real-time.</p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button class="btn-pixel btn-primary-action" id="btn-aslab-top-action">
+              ➕ Tambah Modul
+            </button>
+            <button class="btn-pixel btn-back" id="btn-aslab-logout" style="border-color: var(--accent-red); color: var(--accent-red);">
+              🚪 Logout Aslab
+            </button>
+          </div>
+        </div>
+
+        <!-- Aslab Studio Navigation Tabs -->
+        <div class="aslab-tabs-bar">
+          <button class="aslab-tab-btn active" data-aslab-tab="modules" id="tab-aslab-modules">
+            📚 Kelola Modul (<span id="aslab-count-mat">0</span>)
+          </button>
+          <button class="aslab-tab-btn" data-aslab-tab="assignments" id="tab-aslab-assignments">
+            📝 Kelola Tugas (<span id="aslab-count-ass">0</span>)
+          </button>
+          <button class="aslab-tab-btn" data-aslab-tab="articles" id="tab-aslab-articles">
+            📖 Kelola Artikel (<span id="aslab-count-art">0</span>)
+          </button>
+          <button class="aslab-tab-btn" data-aslab-tab="audit" id="tab-aslab-audit">
+            📊 Submissions &amp; Live Scores
+          </button>
+        </div>
+
+        <!-- Section 1: Materials Management -->
+        <div class="aslab-tab-section active" id="aslab-section-modules">
+          <div class="aslab-panel">
+            <div class="aslab-panel-header">
+              <h3>Daftar Modul Kurikulum Praktikum</h3>
+              <button class="btn-pixel btn-primary-action" id="btn-aslab-add-new-mat" style="padding: 6px 12px; font-size: 0.7rem;">
+                ➕ Tambah Modul Baru
+              </button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="aslab-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">ID</th>
+                    <th>Judul Modul</th>
+                    <th>Bahasa</th>
+                    <th>Kategori</th>
+                    <th>XP Reward</th>
+                    <th style="text-align: right;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="aslab-materials-tbody">
+                  <!-- Populated from GET /materials -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Assignments Management -->
+        <div class="aslab-tab-section" id="aslab-section-assignments" style="display: none;">
+          <div class="aslab-panel">
+            <div class="aslab-panel-header">
+              <h3>Daftar Tugas &amp; Evaluasi Lab</h3>
+              <button class="btn-pixel btn-primary-action" id="btn-aslab-add-new-ass" style="padding: 6px 12px; font-size: 0.7rem;">
+                ➕ Tambah Tugas Baru
+              </button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="aslab-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">ID</th>
+                    <th>Judul Tugas</th>
+                    <th>Kategori</th>
+                    <th>Jadwal / Sesi</th>
+                    <th>Poin</th>
+                    <th style="text-align: right;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="aslab-assignments-tbody">
+                  <!-- Populated from GET /assignments -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Articles Management -->
+        <div class="aslab-tab-section" id="aslab-section-articles" style="display: none;">
+          <div class="aslab-panel">
+            <div class="aslab-panel-header">
+              <h3>Daftar Artikel Teori &amp; Referensi</h3>
+              <button class="btn-pixel btn-primary-action" id="btn-aslab-add-new-art" style="padding: 6px 12px; font-size: 0.7rem;">
+                ➕ Tambah Artikel Baru
+              </button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="aslab-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">ID</th>
+                    <th>Judul Artikel</th>
+                    <th>Kategori</th>
+                    <th>Estimasi Baca</th>
+                    <th>Referensi OCW</th>
+                    <th style="text-align: right;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="aslab-articles-tbody">
+                  <!-- Populated from GET /articles -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Audit & Live Scores -->
+        <div class="aslab-tab-section" id="aslab-section-audit" style="display: none;">
+          <div class="aslab-panel">
+            <div class="aslab-panel-header">
+              <h3>Riwayat Submissions &amp; Live Score Realtime</h3>
+              <button class="btn-table-del" id="btn-refresh-submissions" style="color: var(--accent-cyan); border-color: var(--border-medium);">
+                🔄 Refresh Data
+              </button>
+            </div>
+            <div class="aslab-submissions-feed" id="aslab-submissions-feed">
+              <!-- Populated from GET /submissions and GET /livescore -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ════════════════════ FLOATING ASLAB CHAT WIDGET (Matching chaticon.png & Chat.png) ════════════════════ -->
+  <div id="aslab-chat-widget-container">
+    <!-- Floating Chat Trigger Button (Round Blue/Cyan matching theme) -->
+    <button id="btn-floating-chat" class="btn-floating-chat" title="Tanya Asisten Lab (Aslab IF'25)">
+      <svg class="chat-icon-default" viewBox="0 0 100 100">
+        <rect x="23" y="21" width="54" height="50" rx="12" fill="#0f172a"/>
+        <polygon points="52,65 77,75 72,54" fill="#0f172a"/>
+        <path d="M 37 49 Q 50 62 63 49" stroke="#00f0ff" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <svg class="chat-icon-clicked" viewBox="0 0 24 24" fill="none" stroke="#020617" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>
+
+    <!-- Chat Drawer Window (Matching Chat.png) -->
+    <div id="chat-drawer-window" class="chat-drawer-window">
+      <div class="chat-window-header">
+        <div class="chat-header-left">
+          <button class="chat-hdr-btn" id="btn-close-chat-arrow" title="Tutup">‹</button>
+          <div class="chat-aslab-avatar">👑</div>
+          <div class="chat-aslab-info">
+            <strong class="chat-title-text">Asisten Lab IF'25</strong>
+            <span class="chat-online-status">🟢 Online • Sesi Praktikum</span>
+          </div>
+        </div>
+        <div class="chat-header-right">
+          <button class="chat-hdr-btn" id="btn-close-chat-x" title="Tutup">✕</button>
+        </div>
+      </div>
+
+      <div class="chat-window-body">
+        <div class="chat-notice-card">
+          <p>Tanyakan kendala koding, petunjuk modul, atau diskusikan error compiler langsung ke Aslab.</p>
+        </div>
+
+        <!-- Messages Stream -->
+        <div class="chat-messages-stream" id="chat-messages-stream">
+          <!-- Loaded dynamically from GET /chat/messages -->
+        </div>
+      </div>
+
+      <div class="chat-window-footer">
+        <form id="form-chat-send" class="chat-input-form">
+          <input type="text" id="chat-input-field" placeholder="Ketik pesan untuk Aslab..." autocomplete="off" required>
+          <div class="chat-input-actions">
+            <button type="submit" class="chat-send-btn" id="btn-chat-send" title="Kirim Pesan">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SPOTLIGHT SEARCH MODAL (Interactive Header Search) ════════════════════ -->
+  <div class="modal-overlay" id="global-search-modal">
+    <div class="modal-card modal-search-spotlight">
+      <div class="spotlight-input-row">
+        <svg class="spotlight-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="spotlight-search-input" placeholder="Cari modul, materi, tugas, syntax C (pointer, struct, printf, for loop)..." autocomplete="off">
+        <button class="spotlight-close-btn" id="btn-close-spotlight" title="Tutup Search (ESC)">✕</button>
+      </div>
+      <div class="spotlight-results-container" id="spotlight-results-list">
+        <!-- Populated dynamically with live results -->
+      </div>
+      <div class="spotlight-footer">
+        <span>Tekan <kbd>↑</kbd> <kbd>↓</kbd> untuk pilih, <kbd>Enter</kbd> untuk buka, <kbd>Esc</kbd> untuk keluar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ EDIT & CUSTOMIZE PROFILE MODAL ════════════════════ -->
+  <div class="modal-overlay" id="modal-edit-profile">
+    <div class="modal-card modal-card-auth">
+      <div class="modal-header">
+        <div>
+          <span class="aslab-badge">CUSTOMIZE PROFILE</span>
+          <h3 class="modal-heading">Ubah Avatar &amp; Banner</h3>
+        </div>
+        <button class="modal-close-btn" id="btn-close-edit-prof-modal">✕</button>
+      </div>
+      <form id="form-customize-profile" class="aslab-form">
+        <div class="form-group">
+          <label class="form-label">Nama Lengkap Mahasiswa</label>
+          <input type="text" id="edit-prof-name" class="form-input" placeholder="Contoh: Muhammad Aqil" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">NIM (Nomor Induk Mahasiswa)</label>
+          <input type="text" id="edit-prof-nim" class="form-input" placeholder="Contoh: 12345678" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pilih Avatar Profile (Emoji / Custom)</label>
+          <div class="avatar-presets-grid" id="avatar-presets-grid">
+            <!-- Populated with preset avatars in app.js -->
+          </div>
+          <input type="text" id="edit-prof-custom-avatar" class="form-input" placeholder="Atau ketik emoji / URL gambar avatar..." style="margin-top: 8px;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pilih Tema Banner Profile</label>
+          <div class="banner-presets-grid" id="banner-presets-grid">
+            <!-- Populated with preset banner styles in app.js -->
+          </div>
+          <input type="text" id="edit-prof-custom-banner" class="form-input" placeholder="Atau paste URL custom gambar banner..." style="margin-top: 8px;">
+        </div>
+        <div class="modal-action-row" style="margin-top: 20px;">
+          <button type="button" class="btn-pixel btn-back" id="btn-cancel-edit-prof">Batal</button>
+          <button type="submit" class="btn-pixel btn-primary-action">💾 Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════════════════ UNIFIED AUTH MODAL: REGISTER / ASLAB LOGIN / SWITCH ACCOUNT ════════════════════ -->
+  <div class="modal-overlay" id="modal-auth-hub">
+    <div class="modal-card modal-card-auth">
+      <div class="modal-header">
+        <div>
+          <span class="aslab-badge" id="auth-modal-badge">AKSES CODELAB IF'25</span>
+          <h3 class="modal-heading" id="auth-modal-title">Autentikasi &amp; Akun</h3>
+        </div>
+        <button class="modal-close-btn" id="btn-close-auth-modal">✕</button>
+      </div>
+
+      <!-- Auth Tabs: Register vs Login Mahasiswa vs Login Aslab -->
+      <div class="auth-modal-tabs">
+        <button class="auth-tab-btn active" data-auth-tab="register" id="tab-auth-register">
+          👨‍💻 Daftar Baru
+        </button>
+        <button class="auth-tab-btn" data-auth-tab="login" id="tab-auth-login">
+          🔑 Masuk Mahasiswa
+        </button>
+        <button class="auth-tab-btn" data-auth-tab="aslab" id="tab-auth-aslab">
+          👑 Login Aslab
+        </button>
+      </div>
+
+      <!-- Tab 1: Daftar Mahasiswa -->
+      <form id="form-auth-register" class="auth-tab-form active">
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="reg-username">Username *</label>
+            <input type="text" id="reg-username" placeholder="misal: akil_if25" required autocomplete="off">
+            <span class="form-hint">Huruf kecil tanpa spasi</span>
+          </div>
+          <div class="form-group half">
+            <label for="reg-nim">NIM Mahasiswa *</label>
+            <input type="text" id="reg-nim" placeholder="misal: 13525099" required autocomplete="off">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-name">Nama Lengkap *</label>
+          <input type="text" id="reg-name" placeholder="Nama Lengkap Mahasiswa" required>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-avatar">Pilih Avatar Emoji</label>
+          <select id="reg-avatar">
+            <option value="👨‍💻">👨‍💻 Programmer</option>
+            <option value="👩‍💻">👩‍💻 Tech Student</option>
+            <option value="🤖">🤖 Cyber Bot</option>
+            <option value="👾">👾 Retro Gamer</option>
+            <option value="🚀">🚀 Astronaut</option>
+            <option value="⚡">⚡ Lightning Coder</option>
+            <option value="👑">👑 Leader</option>
+            <option value="🐱">🐱 Pixel Cat</option>
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" id="btn-cancel-auth-modal">Batal</button>
+          <button type="submit" class="btn-pixel btn-submit-aslab">
+            💾 Daftarkan Akun Mahasiswa
+          </button>
+        </div>
+      </form>
+
+      <!-- Tab 2: Login Mahasiswa (NIM / Username Pribadi) -->
+      <form id="form-auth-login" class="auth-tab-form" style="display: none;">
+        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 14px;">
+          Masukkan NIM atau Username terdaftar untuk masuk ke sesi belajar Anda.
+        </p>
+        <div class="form-group">
+          <label for="login-student-identifier">NIM atau Username Mahasiswa *</label>
+          <input type="text" id="login-student-identifier" placeholder="Masukkan NIM atau Username Anda..." required autocomplete="off">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" id="btn-cancel-login-modal">Batal</button>
+          <button type="submit" class="btn-pixel btn-primary-action">
+            🚀 Masuk ke Codelab
+          </button>
+        </div>
+      </form>
+
+      <!-- Tab 3: Login Asisten Lab (Pilihan 3 Akun Aslab) -->
+      <form id="form-auth-aslab" class="auth-tab-form" style="display: none;">
+        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 14px;">
+          Portal khusus 3 Asisten Laboratorium IF'25. Pilih akun Aslab dan masukkan kode PIN verifikasi.
+        </p>
+        <div class="form-group">
+          <label for="aslab-account-select">Pilih Akun Asisten Lab *</label>
+          <select id="aslab-account-select" class="form-input" style="background: var(--bg-inset); color: var(--text-primary); border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-xs); width: 100%;">
+            <option value="aslab_1">👑 Aslab 1: Koordinator Lab IF'25 (ASLAB-01)</option>
+            <option value="aslab_2">⚡ Aslab 2: Kurikulum &amp; Modul IF'25 (ASLAB-02)</option>
+            <option value="aslab_3">🛡️ Aslab 3: Evaluasi &amp; Tugas IF'25 (ASLAB-03)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="aslab-auth-pin">Kode PIN Asisten Lab *</label>
+          <input type="password" id="aslab-auth-pin" placeholder="Masukkan PIN Aslab..." required autocomplete="off">
+          <span class="form-hint" style="color: var(--accent-cyan); font-size: 0.72rem; margin-top: 4px; display: block;">Aslab 1: 1928 | Aslab 2: 2525 | Aslab 3: 2025</span>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" id="btn-cancel-aslab-auth-modal">Batal</button>
+          <button type="submit" class="btn-pixel btn-primary-action">
+            🔓 Verifikasi &amp; Masuk Aslab
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════════════════ MODAL: TAMBAH / EDIT MODUL ASLAB ════════════════════ -->
+  <div class="modal-overlay" id="modal-aslab">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="aslab-badge">MANAJEMEN KURIKULUM</span>
+          <h3 class="modal-heading" id="modal-heading-mat">Tambah Modul Praktikum Baru</h3>
+        </div>
+        <button class="modal-close-btn" id="btn-close-aslab-modal">✕</button>
+      </div>
+      <form id="form-add-material">
+        <input type="hidden" id="aslab-mat-edit-id" value="">
+        <div class="form-group">
+          <label for="aslab-title">Judul Modul *</label>
+          <input type="text" id="aslab-title" placeholder="Contoh: 10. Socket Programming di C" required>
+        </div>
+        <div class="form-group">
+          <label for="aslab-summary">Ringkasan Materi (1 Kalimat) *</label>
+          <input type="text" id="aslab-summary" placeholder="Ringkasan konsep utama modul..." required>
+        </div>
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="aslab-lang">Bahasa Pemrograman *</label>
+            <select id="aslab-lang">
+              <option value="c">Bahasa C (GCC)</option>
+              <option value="python">Python 3.9</option>
+            </select>
+          </div>
+          <div class="form-group half">
+            <label for="aslab-category">Kategori Modul</label>
+            <input type="text" id="aslab-category" placeholder="Contoh: Jaringan Komputer">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="aslab-content">Konten Teori &amp; Petunjuk Praktikum (HTML) *</label>
+          <textarea id="aslab-content" rows="6" placeholder="<h3>Judul Teori</h3><p>Penjelasan materi...</p>" required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" id="btn-cancel-aslab-modal">Batal</button>
+          <button type="submit" class="btn-pixel btn-submit-aslab">
+            💾 Simpan Modul ke Database
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════════════════ MODAL: TAMBAH / EDIT TUGAS PRAKTIKUM ════════════════════ -->
+  <div class="modal-overlay" id="modal-aslab-assignment">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="aslab-badge">MANAJEMEN TUGAS</span>
+          <h3 class="modal-heading" id="modal-heading-ass">Tambah Tugas Praktikum Baru</h3>
+        </div>
+        <button class="modal-close-btn" id="btn-close-ass-modal">✕</button>
+      </div>
+      <form id="form-add-assignment">
+        <input type="hidden" id="aslab-ass-edit-id" value="">
+        <div class="form-group">
+          <label for="ass-form-title">Judul Tugas Praktikum *</label>
+          <input type="text" id="ass-form-title" placeholder="Contoh: Tugas 10: Client-Server Socket TCP" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="ass-form-category">Kategori *</label>
+            <input type="text" id="ass-form-category" placeholder="Contoh: Jaringan Komputer" required>
+          </div>
+          <div class="form-group half">
+            <label for="ass-form-deadline">Jadwal / Sesi Praktikum *</label>
+            <input type="text" id="ass-form-deadline" placeholder="Contoh: Sesi 3 • Minggu 10" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="ass-form-points">Total Poin Tugas</label>
+          <input type="number" id="ass-form-points" value="100" min="10" max="500">
+        </div>
+        <div class="form-group">
+          <label for="ass-form-desc">Deskripsi &amp; Instruksi Tugas *</label>
+          <textarea id="ass-form-desc" rows="4" placeholder="Jelaskan spesifikasi tugas yang harus dibuat mahasiswa..." required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" id="btn-cancel-ass-modal">Batal</button>
+          <button type="submit" class="btn-pixel btn-submit-aslab">
+            💾 Simpan Tugas ke Database
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════════════════ MODAL: TAMBAH / EDIT ARTIKEL TEORI ════════════════════ -->
+  <div class="modal-overlay" id="modal-aslab-article">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="aslab-badge">MANAJEMEN ARTIKEL</span>
+          <h3 class="modal-heading" id="modal-heading-art">Tambah Artikel Teori Baru</h3>
+        </div>
+        <button class="modal-close-btn" id="btn-close-art-modal">✕</button>
+      </div>
+      <form id="form-add-article">
+        <input type="hidden" id="aslab-art-edit-id" value="">
+        <div class="form-group">
+          <label for="art-form-title">Judul Artikel Teori *</label>
+          <input type="text" id="art-form-title" placeholder="Contoh: Panduan Menggunakan Socket TCP di C" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="art-form-category">Kategori Teori *</label>
+            <input type="text" id="art-form-category" placeholder="Contoh: Advanced C &amp; Networking" required>
+          </div>
+          <div class="form-group half">
+            <label for="art-form-time">Estimasi Waktu Baca *</label>
+            <input type="text" id="art-form-time" placeholder="Contoh: 15 Menit" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="art-form-summary">Ringkasan Artikel (1-2 Kalimat) *</label>
+          <input type="text" id="art-form-summary" placeholder="Ringkasan penjelasan teori..." required>
+        </div>
+        <div class="form-group">
+          <label for="art-form-ref">Link Referensi Resmi MIT OCW / Eksternal</label>
+          <input type="url" id="art-form-ref" placeholder="https://ocw.mit.edu/courses/..." value="https://ocw.mit.edu/courses/6-s096-introduction-to-c-and-c-january-iap-2013/">
+        </div>
+        <div class="form-group">
+          <label for="art-form-content">Isi Artikel Teori (Format HTML) *</label>
+          <textarea id="art-form-content" rows="6" placeholder="<h2>Judul Pembahasan</h2><p>Penjelasan lengkap teori pemrograman C...</p>" required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" id="btn-cancel-art-modal">Batal</button>
+          <button type="submit" class="btn-pixel btn-submit-aslab">
+            💾 Publikasikan Artikel Teori
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Mount -->
+  <div id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
