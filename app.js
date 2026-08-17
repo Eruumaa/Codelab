@@ -228,7 +228,7 @@ print("Hello from Python IDE!")`
   // ─── Page Router (DOM Manipulation & Guest Route Protection) ───
   function switchPage(pageName) {
     const isGuest = !state.currentUser;
-    const guestAllowedPages = ["landing", "course", "ide"];
+    const guestAllowedPages = ["landing", "course", "ide", "leaderboard"];
     
     if (isGuest && !guestAllowedPages.includes(pageName)) {
       showToast("Silakan login atau daftar akun praktikan untuk mengakses fitur ini!", "info");
@@ -2005,6 +2005,7 @@ if __name__ == "__main__":
     on("nav-btn-dashboard", "click", () => switchPage("dashboard"));
     on("nav-btn-course", "click", () => switchPage("course"));
     on("nav-btn-assignment", "click", () => switchPage("assignment"));
+    on("nav-btn-leaderboard", "click", () => switchPage("leaderboard"));
     on("nav-btn-materials", "click", () => switchPage("materials"));
     on("nav-btn-ide", "click", () => switchPage("ide"));
     on("nav-btn-aslab", "click", () => switchPage("aslab"));
@@ -2023,6 +2024,10 @@ if __name__ == "__main__":
     on("drop-btn-profile", "click", () => {
       if (userMenu) userMenu.classList.remove("open");
       switchPage("profile");
+    });
+    on("drop-btn-leaderboard", "click", () => {
+      if (userMenu) userMenu.classList.remove("open");
+      switchPage("leaderboard");
     });
     on("drop-btn-bookmarks", "click", () => {
       if (userMenu) userMenu.classList.remove("open");
