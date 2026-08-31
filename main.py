@@ -25,26 +25,26 @@ app.mount("/Assets", StaticFiles(directory="Assets"), name="assets")
 
 @app.get("/")
 def serve_index():
-    return FileResponse("index.html")
+    return FileResponse("index.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 @app.get("/style.css")
 def serve_css():
-    return FileResponse("style.css", media_type="text/css")
+    return FileResponse("style.css", media_type="text/css", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 @app.get("/app.js")
 def serve_js():
-    return FileResponse("app.js", media_type="application/javascript")
+    return FileResponse("app.js", media_type="application/javascript", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 # 3 Dedicated Assistant Lab (Aslab) Accounts with Unique Credentials
 ASLAB_ACCOUNTS = {
     "aslab_1": {
         "username": "aslab_1",
-        "name": "Aslab 1: Koordinator Lab IF'25",
-        "nim": "ASLAB-01",
+        "name": "Aslab 1",
+        "nim": "ASLAB1",
         "pin": "1928",
         "role": "aslab",
         "avatar": "👑",
-        "title": "Koordinator Praktikum & Sistem",
+        "title": "Aslab",
         "xp": 999,
         "level": 9,
         "streak": 14,
@@ -52,12 +52,12 @@ ASLAB_ACCOUNTS = {
     },
     "aslab_2": {
         "username": "aslab_2",
-        "name": "Aslab 2: Kurikulum & Modul IF'25",
-        "nim": "ASLAB-02",
+        "name": "Aslab 2",
+        "nim": "ASLAB2",
         "pin": "2525",
         "role": "aslab",
         "avatar": "⚡",
-        "title": "Asisten Kurikulum & Bahan Ajar C",
+        "title": "Aslab",
         "xp": 950,
         "level": 9,
         "streak": 10,
@@ -65,12 +65,12 @@ ASLAB_ACCOUNTS = {
     },
     "aslab_3": {
         "username": "aslab_3",
-        "name": "Aslab 3: Evaluasi & Tugas IF'25",
-        "nim": "ASLAB-03",
+        "name": "Aslab 3",
+        "nim": "ASLAB3",
         "pin": "2025",
         "role": "aslab",
         "avatar": "🛡️",
-        "title": "Asisten Penilaian & Live Scoreboard",
+        "title": "Aslab",
         "xp": 920,
         "level": 9,
         "streak": 12,
@@ -128,9 +128,9 @@ def init_db():
 
     # Seed 3 dynamic Aslab accounts into users table if not present
     initial_aslabs = [
-        ("aslab_1", "Aslab 1 IF'25", "ASLAB-01", "aslab", "👑", "linear-gradient(135deg, #0c1c4d 0%, #1e1035 100%)", 999, 9, 14, "1928", json.dumps([1,2,3,4,5,6,7,8,9])),
-        ("aslab_2", "Aslab 2 IF'25", "ASLAB-02", "aslab", "⚡", "linear-gradient(135deg, #052e16 0%, #0c1c4d 100%)", 950, 9, 10, "2525", json.dumps([1,2,3,4,5,6,7,8,9])),
-        ("aslab_3", "Aslab 3 IF'25", "ASLAB-03", "aslab", "🛡️", "linear-gradient(135deg, #3b0764 0%, #030712 100%)", 920, 9, 12, "2025", json.dumps([1,2,3,4,5,6,7,8,9])),
+        ("aslab_1", "Aslab 1", "ASLAB1", "aslab", "👑", "linear-gradient(135deg, #0c1c4d 0%, #1e1035 100%)", 999, 9, 14, "1928", json.dumps([1,2,3,4,5,6,7,8,9])),
+        ("aslab_2", "Aslab 2", "ASLAB2", "aslab", "⚡", "linear-gradient(135deg, #052e16 0%, #0c1c4d 100%)", 950, 9, 10, "2525", json.dumps([1,2,3,4,5,6,7,8,9])),
+        ("aslab_3", "Aslab 3", "ASLAB3", "aslab", "🛡️", "linear-gradient(135deg, #3b0764 0%, #030712 100%)", 920, 9, 12, "2025", json.dumps([1,2,3,4,5,6,7,8,9])),
     ]
     for u_aslab in initial_aslabs:
         c.execute("SELECT id FROM users WHERE username = ?", (u_aslab[0],))
@@ -181,6 +181,33 @@ def init_db():
                   avatar TEXT,
                   role TEXT,
                   text TEXT,
+                  timestamp TEXT)''')
+
+    # 8. Tabel Quizzes (Quiz & Ujian Praktikum)
+    c.execute('''CREATE TABLE IF NOT EXISTS quizzes
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  title TEXT,
+                  type TEXT DEFAULT 'quiz',
+                  category TEXT DEFAULT 'Dasar Pemrograman',
+                  description TEXT,
+                  duration_minutes INTEGER DEFAULT 15,
+                  schedule TEXT DEFAULT 'Sesi Praktikum',
+                  points INTEGER DEFAULT 100,
+                  questions_json TEXT DEFAULT '[]',
+                  is_active INTEGER DEFAULT 1,
+                  created_at TEXT)''')
+
+    # 9. Tabel Quiz Submissions
+    c.execute('''CREATE TABLE IF NOT EXISTS quiz_submissions
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  quiz_id INTEGER,
+                  username TEXT,
+                  student_name TEXT,
+                  nim TEXT,
+                  answers_json TEXT,
+                  score INTEGER,
+                  total_points INTEGER,
+                  time_taken_seconds INTEGER,
                   timestamp TEXT)''')
 
     # Users & Chat tables start completely clean without dummy messages
@@ -538,6 +565,33 @@ class LiveScoreSubmit(BaseModel):
     code: str
     language: Optional[str] = "c"
 
+class QuizCreate(BaseModel):
+    title: str
+    type: Optional[str] = "quiz"
+    category: Optional[str] = "Dasar Pemrograman"
+    description: Optional[str] = ""
+    duration_minutes: Optional[int] = 15
+    schedule: Optional[str] = "Sesi Praktikum"
+    points: Optional[int] = 100
+    questions_json: str
+    is_active: Optional[int] = 1
+
+class QuizUpdate(BaseModel):
+    title: Optional[str] = None
+    type: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    schedule: Optional[str] = None
+    points: Optional[int] = None
+    questions_json: Optional[str] = None
+    is_active: Optional[int] = None
+
+class QuizSubmit(BaseModel):
+    username: str
+    answers: dict
+    time_taken_seconds: Optional[int] = 0
+
 # ---- API ENDPOINTS ----
 
 @app.post("/execute")
@@ -753,6 +807,200 @@ def get_submissions():
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("SELECT * FROM submissions ORDER BY id DESC LIMIT 50")
+    rows = c.fetchall()
+    conn.close()
+    return [dict(ix) for ix in rows]
+
+# ─── QUIZZES & EXAMS CRUD + LIVE SCORING ───
+@app.get("/quizzes")
+def get_quizzes():
+    conn = sqlite3.connect('app.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM quizzes ORDER BY is_active DESC, id ASC")
+    rows = c.fetchall()
+    conn.close()
+    
+    result = []
+    for r in rows:
+        q = dict(r)
+        try:
+            questions = json.loads(q.get("questions_json") or "[]")
+        except:
+            questions = []
+        q["question_count"] = len(questions)
+        result.append(q)
+    return result
+
+@app.get("/quizzes/{quiz_id}")
+def get_quiz_detail(quiz_id: int):
+    conn = sqlite3.connect('app.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM quizzes WHERE id = ?", (quiz_id,))
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Kuis tidak ditemukan")
+    q = dict(row)
+    try:
+        q["questions"] = json.loads(q.get("questions_json") or "[]")
+    except:
+        q["questions"] = []
+    return q
+
+@app.post("/quizzes")
+def create_quiz(data: QuizCreate):
+    conn = sqlite3.connect('app.db')
+    c = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute("""INSERT INTO quizzes (title, type, category, description, duration_minutes, schedule, points, questions_json, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+              (data.title, data.type or "quiz", data.category or "Dasar Pemrograman", data.description or "",
+               data.duration_minutes or 15, data.schedule or "Sesi Praktikum", data.points or 100,
+               data.questions_json or "[]", data.is_active if data.is_active is not None else 1, now_str))
+    conn.commit()
+    new_id = c.lastrowid
+    conn.close()
+    return {"status": "success", "id": new_id, "message": f"Kuis/Ujian '{data.title}' berhasil dibuat"}
+
+@app.put("/quizzes/{quiz_id}")
+def update_quiz(quiz_id: int, data: QuizUpdate):
+    conn = sqlite3.connect('app.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM quizzes WHERE id = ?", (quiz_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Kuis tidak ditemukan")
+        
+    curr = dict(row)
+    title = data.title if data.title is not None else curr["title"]
+    q_type = data.type if data.type is not None else curr["type"]
+    category = data.category if data.category is not None else curr["category"]
+    desc = data.description if data.description is not None else curr["description"]
+    dur = data.duration_minutes if data.duration_minutes is not None else curr["duration_minutes"]
+    sched = data.schedule if data.schedule is not None else curr["schedule"]
+    pts = data.points if data.points is not None else curr["points"]
+    q_json = data.questions_json if data.questions_json is not None else curr["questions_json"]
+    active = data.is_active if data.is_active is not None else curr["is_active"]
+    
+    c.execute("""UPDATE quizzes SET title=?, type=?, category=?, description=?, duration_minutes=?, schedule=?, points=?, questions_json=?, is_active=?
+                 WHERE id=?""", (title, q_type, category, desc, dur, sched, pts, q_json, active, quiz_id))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "message": f"Kuis #{quiz_id} berhasil diperbarui"}
+
+@app.delete("/quizzes/{quiz_id}")
+def delete_quiz(quiz_id: int):
+    conn = sqlite3.connect('app.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM quizzes WHERE id = ?", (quiz_id,))
+    c.execute("DELETE FROM quiz_submissions WHERE quiz_id = ?", (quiz_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "message": f"Kuis #{quiz_id} berhasil dihapus"}
+
+@app.post("/quizzes/{quiz_id}/submit")
+def submit_quiz(quiz_id: int, sub: QuizSubmit):
+    conn = sqlite3.connect('app.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    
+    # 1. Lookup Quiz
+    c.execute("SELECT * FROM quizzes WHERE id = ?", (quiz_id,))
+    quiz_row = c.fetchone()
+    if not quiz_row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Kuis/Ujian tidak ditemukan")
+        
+    quiz_data = dict(quiz_row)
+    try:
+        questions = json.loads(quiz_data.get("questions_json") or "[]")
+    except:
+        questions = []
+        
+    total_points = quiz_data.get("points") or 100
+    points_per_question = total_points / max(1, len(questions)) if questions else 0
+    
+    # 2. Evaluate answers
+    correct_count = 0
+    earned_score = 0
+    detail_eval = []
+    
+    for idx, q in enumerate(questions):
+        user_ans = sub.answers.get(str(idx))
+        if user_ans is None:
+            user_ans = sub.answers.get(idx)
+            
+        correct_ans = q.get("correct_answer", 0)
+        q_points = q.get("points") or points_per_question
+        is_correct = (user_ans is not None and int(user_ans) == int(correct_ans))
+        
+        if is_correct:
+            correct_count += 1
+            earned_score += q_points
+            
+        detail_eval.append({
+            "question_id": q.get("id", idx + 1),
+            "user_answer": user_ans,
+            "correct_answer": correct_ans,
+            "is_correct": is_correct,
+            "explanation": q.get("explanation", "")
+        })
+        
+    earned_score = min(total_points, int(round(earned_score)))
+    
+    # 3. Lookup user info
+    c.execute("SELECT * FROM users WHERE username = ?", (sub.username,))
+    user_row = c.fetchone()
+    student_name = user_row["name"] if user_row else sub.username
+    nim = user_row["nim"] if user_row else "-"
+    
+    # 4. Save to quiz_submissions
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    time_str = datetime.now().strftime("%H:%M:%S")
+    c.execute("""INSERT INTO quiz_submissions (quiz_id, username, student_name, nim, answers_json, score, total_points, time_taken_seconds, timestamp)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+              (quiz_id, sub.username, student_name, nim, json.dumps(detail_eval), earned_score, total_points, sub.time_taken_seconds or 0, now_str))
+              
+    # 5. Push to live_scores (Exclusively for Quiz & Ujian)
+    quiz_type_label = "UJIAN" if quiz_data.get("type") == "ujian" else "QUIZ"
+    status_label = "PASSED" if (earned_score / max(1, total_points)) >= 0.6 else "FAILED"
+    runtime_str = f"{sub.time_taken_seconds}s" if sub.time_taken_seconds else "1m"
+    full_title = f"[{quiz_type_label}] {quiz_data.get('title')}"
+    
+    c.execute("""INSERT INTO live_scores (username, student_name, nim, assignment_id, assignment_title, score, status, exec_time, timestamp)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+              (sub.username, student_name, nim, quiz_id, full_title, earned_score, status_label, runtime_str, time_str))
+              
+    # 6. Award XP to student user
+    if user_row:
+        new_xp = (user_row["xp"] or 0) + earned_score
+        new_lvl = max(1, (new_xp // 150) + 1)
+        c.execute("UPDATE users SET xp = ?, level = ? WHERE username = ?", (new_xp, new_lvl, sub.username))
+        
+    conn.commit()
+    conn.close()
+    
+    return {
+        "status": "success",
+        "quiz_id": quiz_id,
+        "score": earned_score,
+        "total_points": total_points,
+        "correct_count": correct_count,
+        "total_questions": len(questions),
+        "details": detail_eval,
+        "message": f"Kuis selesai! Skor Anda: {earned_score}/{total_points} ({correct_count}/{len(questions)} Benar)"
+    }
+
+@app.get("/quizzes/{quiz_id}/submissions")
+def get_quiz_submissions(quiz_id: int):
+    conn = sqlite3.connect('app.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM quiz_submissions WHERE quiz_id = ? ORDER BY id DESC", (quiz_id,))
     rows = c.fetchall()
     conn.close()
     return [dict(ix) for ix in rows]

@@ -7,37 +7,50 @@
   "use strict";
 
   // ─── Configuration & Endpoints ───
+  const API_BASE = (typeof window !== "undefined" && window.location.origin && !window.location.origin.startsWith("file:"))
+    ? window.location.origin
+    : "http://localhost:8000";
+
   const CONFIG = {
-    API_BASE: "http://localhost:8000",
+    API_BASE: API_BASE,
     ENDPOINTS: {
-      MATERIALS:        "http://localhost:8000/materials",
-      ASSIGNMENTS:      "http://localhost:8000/assignments",
-      ARTICLES:         "http://localhost:8000/articles",
-      EXECUTE:          "http://localhost:8000/execute",
-      USERS:            "http://localhost:8000/users",
-      PROGRESS:         "http://localhost:8000/users/progress",
-      SUBMISSIONS:      "http://localhost:8000/submissions",
-      LEADERBOARD:      "http://localhost:8000/leaderboard",
-      LIVESCORE:        "http://localhost:8000/livescore",
-      LIVESCORE_SUBMIT: "http://localhost:8000/livescore/submit",
-      ASLAB_ACCOUNTS:   "http://localhost:8000/aslab/accounts",
-      ASLAB_LOGIN:      "http://localhost:8000/aslab/login",
-      CHAT:             "http://localhost:8000/chat/messages"
+      MATERIALS: `${API_BASE}/materials`,
+      ASSIGNMENTS: `${API_BASE}/assignments`,
+      QUIZZES: `${API_BASE}/quizzes`,
+      ARTICLES: `${API_BASE}/articles`,
+      EXECUTE: `${API_BASE}/execute`,
+      USERS: `${API_BASE}/users`,
+      PROGRESS: `${API_BASE}/users/progress`,
+      SUBMISSIONS: `${API_BASE}/submissions`,
+      LEADERBOARD: `${API_BASE}/leaderboard`,
+      LIVESCORE: `${API_BASE}/livescore`,
+      LIVESCORE_SUBMIT: `${API_BASE}/livescore/submit`,
+      ASLAB_ACCOUNTS: `${API_BASE}/aslab/accounts`,
+      ASLAB_LOGIN: `${API_BASE}/aslab/login`,
+      CHAT: `${API_BASE}/chat/messages`
     },
     STORAGE_KEYS: {
       CURRENT_USER: "codelab_active_user",
-      LAST_PAGE:    "codelab_last_page",
+      LAST_PAGE: "codelab_last_page",
       LAST_MAT_IDX: "codelab_last_mat_idx",
-      ASLAB_AUTH:   "codelab_aslab_auth_token",
-      THEME:        "codelab_theme_mode"
+      ASLAB_AUTH: "codelab_aslab_auth_token",
+      THEME: "codelab_theme_mode"
     }
   };
 
   // ─── Application State ───
   const state = {
-    currentPage: "dashboard", // 'landing' | 'dashboard' | 'course' | 'assignment' | 'leaderboard' | 'materials' | 'ide' | 'workspace' | 'profile' | 'aslab'
+    currentPage: "dashboard", // 'landing' | 'dashboard' | 'course' | 'assignment' | 'quiz' | 'leaderboard' | 'materials' | 'ide' | 'workspace' | 'profile' | 'aslab'
     materials: [],
     assignments: [],
+    quizzes: [],
+    activeQuiz: null,
+    activeQuizQuestionIndex: 0,
+    quizAnswers: {},
+    quizTimerSecondsRemaining: 0,
+    quizTimerInterval: null,
+    quizFilter: "all",
+    aslabQuizBuilderQuestions: [],
     articles: [],
     leaderboard: [],
     liveScores: [],
@@ -51,7 +64,7 @@
     pureLanguage: "c",
     activeTaskToSubmit: null,
     aslabTab: "modules",
-    
+
     // Workspace Code Store (Empty starter so students think and write themselves)
     workspaceCode: {
       c: `#include <stdio.h>
@@ -187,7 +200,7 @@ print("Hello from Python IDE!")`
       lineWrapping: false,
       extraKeys: {
         "Ctrl-Enter": () => executeCode("workspace"),
-        "Cmd-Enter":  () => executeCode("workspace"),
+        "Cmd-Enter": () => executeCode("workspace"),
         Tab: function (cm) { cm.replaceSelection("    ", "end"); }
       }
     });
@@ -215,7 +228,7 @@ print("Hello from Python IDE!")`
       lineWrapping: false,
       extraKeys: {
         "Ctrl-Enter": () => executeCode("pure"),
-        "Cmd-Enter":  () => executeCode("pure"),
+        "Cmd-Enter": () => executeCode("pure"),
         Tab: function (cm) { cm.replaceSelection("    ", "end"); }
       }
     });
@@ -228,9 +241,20 @@ print("Hello from Python IDE!")`
   // ─── Page Router (DOM Manipulation & Guest Route Protection) ───
   function switchPage(pageName) {
     const isGuest = !state.currentUser;
-    const guestAllowedPages = ["landing", "course", "ide", "leaderboard"];
-    
-    if (isGuest && !guestAllowedPages.includes(pageName)) {
+    const guestAllowedPages = ["landing", "course", "ide"];
+
+    // If logged in, redirect landing/explore to dashboard / aslab
+    if (!isGuest && pageName === "landing") {
+      pageName = state.isAslabAuthenticated ? "aslab" : "dashboard";
+    }
+
+    if (pageName === "aslab") {
+      if (!state.isAslabAuthenticated) {
+        showToast("🔒 Masukkan PIN Asisten Lab untuk membuka Aslab Studio", "info");
+        openAuthModal("aslab");
+        return;
+      }
+    } else if (isGuest && !guestAllowedPages.includes(pageName)) {
       showToast("Silakan login atau daftar akun praktikan untuk mengakses fitur ini!", "info");
       openAuthModal("login");
       return;
@@ -272,15 +296,12 @@ print("Hello from Python IDE!")`
       }, 50);
     } else if (pageName === "assignment") {
       renderAssignments();
+    } else if (pageName === "quiz") {
+      exitQuizPlayer();
+      fetchQuizzes();
     } else if (pageName === "profile") {
       renderUserProfilePage();
     } else if (pageName === "aslab") {
-      if (!state.isAslabAuthenticated) {
-        showToast("Harap masukkan PIN Asisten Lab terlebih dahulu!", "error");
-        openAuthModal("aslab");
-        switchPage("dashboard");
-        return;
-      }
       loadAslabDashboard();
     } else if (pageName === "course") {
       renderCourseCurriculum();
@@ -328,7 +349,7 @@ print("Hello from Python IDE!")`
     }
 
     const isAslab = user && user.role === "aslab" && state.isAslabAuthenticated;
-    
+
     // Topbar Profile Pill
     const navAvatar = document.getElementById("nav-user-avatar");
     const navName = document.getElementById("nav-user-name");
@@ -348,12 +369,15 @@ print("Hello from Python IDE!")`
 
     // Topbar Authentication State
     const authElements = document.querySelectorAll(".user-auth-only");
+    const guestElements = document.querySelectorAll(".guest-only");
     const regBtn = document.getElementById("btn-open-register-modal");
     if (user) {
       authElements.forEach(el => el.style.display = "inline-flex");
+      guestElements.forEach(el => el.style.display = "none");
       if (regBtn) regBtn.style.display = "none";
     } else {
       authElements.forEach(el => el.style.display = "none");
+      guestElements.forEach(el => el.style.display = "inline-flex");
       if (regBtn) regBtn.style.display = "inline-flex";
     }
 
@@ -382,7 +406,7 @@ print("Hello from Python IDE!")`
     if (sideLvl) sideLvl.textContent = user ? `Level ${user.level || 1} ${isAslab ? 'Master' : 'Cadet'}` : "Silakan Daftar";
     if (sideXp) sideXp.textContent = user ? (user.xp || 0) : 0;
     if (sideStreak) sideStreak.textContent = user ? (user.streak || 0) : 0;
-    
+
     const completedCount = (user?.completed_materials || []).length;
     if (sideComp) sideComp.textContent = `${completedCount} / ${state.materials.length || 9}`;
     if (sideBadges) sideBadges.textContent = completedCount;
@@ -438,7 +462,7 @@ print("Hello from Python IDE!")`
           bannerBg.style.background = u.banner;
         }
       } else {
-        bannerBg.style.background = isAslab 
+        bannerBg.style.background = isAslab
           ? "linear-gradient(135deg, #0c1c4d 0%, #1e1035 100%)"
           : "radial-gradient(circle at 75% 25%, #312e81 0%, #1e3a8a 45%, #064e3b 85%, #022c22 100%)";
       }
@@ -829,6 +853,389 @@ int main() {
     });
   }
 
+  // ─── Quiz & Exam System Controller ───
+  async function fetchQuizzes() {
+    try {
+      const res = await fetch(CONFIG.ENDPOINTS.QUIZZES);
+      if (!res.ok) throw new Error("Fetch quizzes failed");
+      state.quizzes = await res.json();
+      renderQuizzesList();
+      if (document.getElementById("aslab-count-quiz")) {
+        document.getElementById("aslab-count-quiz").textContent = state.quizzes.length;
+      }
+    } catch (e) {
+      console.warn("Could not fetch quizzes:", e);
+      state.quizzes = [];
+      renderQuizzesList();
+    }
+  }
+
+  function renderQuizzesList() {
+    const grid = document.getElementById("quiz-cards-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    const filtered = state.quizzes.filter(q => {
+      if (!q.is_active && !state.isAslabAuthenticated) return false;
+      if (state.quizFilter === "quiz") return q.type === "quiz";
+      if (state.quizFilter === "ujian") return q.type === "ujian";
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; padding: 48px 20px; background: var(--bg-card); border: 1px dashed var(--border-medium); border-radius: var(--radius-sm);">
+          <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">📋</span>
+          <h3 style="font-family: var(--font-pixel); font-size: 0.9rem; color: var(--text-primary); margin-bottom: 8px;">Belum Ada Quiz / Exam Aktif</h3>
+          <p style="color: var(--text-secondary); font-size: 0.88rem; max-width: 480px; margin: 0 auto 16px auto;">Quiz dan Exam praktikum akan diterbitkan langsung oleh Asisten Laboratorium pada sesi lab yang ditentukan.</p>
+        </div>
+      `;
+      return;
+    }
+
+    filtered.forEach(q => {
+      const card = document.createElement("div");
+      card.className = `quiz-card ${q.type || 'quiz'}`;
+      const isExam = q.type === "ujian";
+      const qCount = q.question_count || (q.questions ? q.questions.length : 0);
+
+      card.innerHTML = `
+        <div>
+          <div class="quiz-card-header">
+            <span class="quiz-type-badge ${isExam ? 'ujian' : 'quiz'}">${isExam ? '⚡ EXAM' : '🎯 QUIZ PRAKTIKUM'}</span>
+            <span class="quiz-points-pill">+${q.points || 100} POIN</span>
+          </div>
+          <h3 class="quiz-card-title">${q.title}</h3>
+          <p class="quiz-card-desc">${q.description || 'Evaluasi pemahaman konsep praktikum pemrograman C.'}</p>
+          <div class="quiz-card-meta">
+            <span>⏱️ ${q.duration_minutes || 15} Menit</span>
+            <span>📝 ${qCount} Soal</span>
+            <span>📅 ${q.schedule || 'Sesi Praktikum'}</span>
+          </div>
+        </div>
+        <div class="quiz-card-footer">
+          <span style="font-size: 0.76rem; color: var(--accent-cyan); font-family: var(--font-mono);">${q.category || 'Dasar Pemrograman'}</span>
+          <button class="btn-pixel btn-primary-action btn-start-quiz" data-id="${q.id}">
+            ▶ Mulai Kerjakan
+          </button>
+        </div>
+      `;
+
+      card.querySelector(".btn-start-quiz").addEventListener("click", () => {
+        startQuiz(q.id);
+      });
+
+      grid.appendChild(card);
+    });
+  }
+
+  async function startQuiz(quizId) {
+    if (!state.currentUser) {
+      showToast("Silakan login menggunakan NIM / Username untuk mulai mengerjakan!", "info");
+      openAuthModal("login");
+      return;
+    }
+
+    try {
+      showToast("Memuat soal kuis...", "info");
+      const res = await fetch(`${CONFIG.ENDPOINTS.QUIZZES}/${quizId}`);
+      if (!res.ok) throw new Error("Gagal memuat kuis");
+      const qData = await res.json();
+      if (!qData.questions || qData.questions.length === 0) {
+        showToast("Kuis ini belum memiliki butir soal.", "error");
+        return;
+      }
+
+      state.activeQuiz = qData;
+      state.activeQuizQuestionIndex = 0;
+      state.quizAnswers = {};
+      state.quizTimerSecondsRemaining = (qData.duration_minutes || 15) * 60;
+
+      // Switch to Player View
+      document.getElementById("quiz-list-view").style.display = "none";
+      document.getElementById("quiz-result-view").style.display = "none";
+      document.getElementById("quiz-player-view").style.display = "block";
+
+      // Setup Player Header
+      const typeBadge = document.getElementById("player-quiz-type-badge");
+      if (typeBadge) {
+        typeBadge.textContent = qData.type === "ujian" ? "UJIAN" : "QUIZ";
+      }
+      const titleEl = document.getElementById("player-quiz-title");
+      if (titleEl) titleEl.textContent = qData.title;
+      const ptsBadge = document.getElementById("player-quiz-points-badge");
+      if (ptsBadge) ptsBadge.textContent = `${qData.points || 100} Poin`;
+
+      renderQuizNavPills();
+      renderQuizQuestion(0);
+      startQuizCountdown();
+    } catch (e) {
+      showToast("Error: " + e.message, "error");
+    }
+  }
+
+  function startQuizCountdown() {
+    if (state.quizTimerInterval) clearInterval(state.quizTimerInterval);
+    const timerDigits = document.getElementById("quiz-timer-digits");
+
+    function updateDisplay() {
+      const mins = Math.floor(state.quizTimerSecondsRemaining / 60);
+      const secs = state.quizTimerSecondsRemaining % 60;
+      if (timerDigits) {
+        timerDigits.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        if (state.quizTimerSecondsRemaining <= 120) {
+          timerDigits.classList.add("warning");
+        } else {
+          timerDigits.classList.remove("warning");
+        }
+      }
+    }
+
+    updateDisplay();
+    state.quizTimerInterval = setInterval(() => {
+      state.quizTimerSecondsRemaining -= 1;
+      updateDisplay();
+
+      if (state.quizTimerSecondsRemaining <= 0) {
+        clearInterval(state.quizTimerInterval);
+        state.quizTimerInterval = null;
+        showToast("⏰ Waktu pengerjaan telah habis! Mengirim jawaban otomatis...", "info");
+        submitActiveQuiz();
+      }
+    }, 1000);
+  }
+
+  function renderQuizNavPills() {
+    const grid = document.getElementById("quiz-nav-grid");
+    if (!grid || !state.activeQuiz || !state.activeQuiz.questions) return;
+    grid.innerHTML = "";
+
+    state.activeQuiz.questions.forEach((q, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "q-nav-btn";
+      btn.textContent = idx + 1;
+
+      const isAnswered = state.quizAnswers[idx] !== undefined;
+      const isActive = state.activeQuizQuestionIndex === idx;
+
+      if (isAnswered) btn.classList.add("answered");
+      if (isActive) btn.classList.add("active");
+
+      btn.onclick = () => renderQuizQuestion(idx);
+      grid.appendChild(btn);
+    });
+  }
+
+  function renderQuizQuestion(idx) {
+    if (!state.activeQuiz || !state.activeQuiz.questions) return;
+    if (idx < 0 || idx >= state.activeQuiz.questions.length) return;
+
+    state.activeQuizQuestionIndex = idx;
+    const q = state.activeQuiz.questions[idx];
+    const totalQ = state.activeQuiz.questions.length;
+
+    // Header meta
+    const numLbl = document.getElementById("q-active-num-lbl");
+    if (numLbl) numLbl.textContent = `Soal ${idx + 1} dari ${totalQ}`;
+    const ptsLbl = document.getElementById("q-active-pts-lbl");
+    if (ptsLbl) ptsLbl.textContent = `${q.points || Math.round((state.activeQuiz.points || 100) / totalQ)} Poin`;
+
+    // Question text
+    const textEl = document.getElementById("q-active-text");
+    if (textEl) textEl.textContent = q.question;
+
+    // Code snippet
+    const codeWrap = document.getElementById("q-active-code-wrap");
+    const codeEl = document.getElementById("q-active-code");
+    if (q.code_snippet && q.code_snippet.trim()) {
+      if (codeWrap) codeWrap.style.display = "block";
+      if (codeEl) codeEl.textContent = q.code_snippet;
+    } else {
+      if (codeWrap) codeWrap.style.display = "none";
+    }
+
+    // Options
+    const optContainer = document.getElementById("q-active-options");
+    if (optContainer) {
+      optContainer.innerHTML = "";
+      const letters = ["A", "B", "C", "D", "E"];
+      (q.options || []).forEach((opt, optIdx) => {
+        const isSelected = state.quizAnswers[idx] === optIdx;
+        const pill = document.createElement("div");
+        pill.className = `q-option-pill ${isSelected ? 'selected' : ''}`;
+        pill.innerHTML = `
+          <div class="q-option-letter">${letters[optIdx] || optIdx + 1}</div>
+          <div class="q-option-text">${opt}</div>
+        `;
+        pill.onclick = () => {
+          selectQuizAnswer(idx, optIdx);
+        };
+        optContainer.appendChild(pill);
+      });
+    }
+
+    // Prev / Next Buttons
+    const prevBtn = document.getElementById("btn-q-prev");
+    const nextBtn = document.getElementById("btn-q-next");
+    if (prevBtn) {
+      prevBtn.disabled = idx === 0;
+      prevBtn.style.opacity = idx === 0 ? "0.4" : "1";
+      prevBtn.onclick = () => renderQuizQuestion(idx - 1);
+    }
+    if (nextBtn) {
+      if (idx === totalQ - 1) {
+        nextBtn.textContent = "🏁 Selesai & Kirim";
+        nextBtn.onclick = () => submitActiveQuiz();
+      } else {
+        nextBtn.textContent = "Selanjutnya ▶";
+        nextBtn.onclick = () => renderQuizQuestion(idx + 1);
+      }
+    }
+
+    renderQuizNavPills();
+  }
+
+  function selectQuizAnswer(qIdx, optIdx) {
+    state.quizAnswers[qIdx] = optIdx;
+    renderQuizQuestion(qIdx);
+  }
+
+  async function submitActiveQuiz() {
+    if (!state.activeQuiz) return;
+    if (state.quizTimerInterval) {
+      clearInterval(state.quizTimerInterval);
+      state.quizTimerInterval = null;
+    }
+
+    const totalQ = state.activeQuiz.questions.length;
+    const answeredCount = Object.keys(state.quizAnswers).length;
+
+    if (answeredCount < totalQ) {
+      const confirmSubmit = confirm(`Anda baru menjawab ${answeredCount} dari ${totalQ} soal. Yakin ingin mengakhiri dan mengirim jawaban sekarang?`);
+      if (!confirmSubmit) {
+        startQuizCountdown();
+        return;
+      }
+    }
+
+    const durationSec = (state.activeQuiz.duration_minutes || 15) * 60;
+    const timeTakenSeconds = Math.max(1, durationSec - state.quizTimerSecondsRemaining);
+    const username = state.currentUser ? state.currentUser.username : "tamu";
+
+    try {
+      showToast("Mengirim dan mengevaluasi lembar jawaban...", "info");
+      const res = await fetch(`${CONFIG.ENDPOINTS.QUIZZES}/${state.activeQuiz.id}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: username,
+          answers: state.quizAnswers,
+          time_taken_seconds: timeTakenSeconds
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Gagal submit kuis");
+      }
+
+      const resultData = await res.json();
+      showToast(`🎉 Kuis Selesai! Skor Anda: ${resultData.score}/${resultData.total_points}`, "success");
+      
+      // Update local user XP
+      if (state.currentUser) {
+        state.currentUser.xp = (state.currentUser.xp || 0) + resultData.score;
+        state.currentUser.level = Math.max(1, Math.floor(state.currentUser.xp / 150) + 1);
+        updateUserHeaderDisplay();
+      }
+
+      renderQuizResults(resultData, state.activeQuiz, timeTakenSeconds);
+    } catch (e) {
+      showToast("Submit error: " + e.message, "error");
+    }
+  }
+
+  function renderQuizResults(resData, quizData, timeTakenSeconds) {
+    document.getElementById("quiz-player-view").style.display = "none";
+    document.getElementById("quiz-list-view").style.display = "none";
+    document.getElementById("quiz-result-view").style.display = "block";
+
+    const isPassed = (resData.score / (resData.total_points || 100)) >= 0.6;
+    const verdictTitle = document.getElementById("result-verdict-title");
+    if (verdictTitle) {
+      verdictTitle.textContent = isPassed ? "Kuis Berhasil Diselesaikan! 🎉" : "Kuis Selesai (Perlu Peningkatan) 📚";
+    }
+    const trophyIcon = document.getElementById("result-trophy-icon");
+    if (trophyIcon) {
+      trophyIcon.textContent = isPassed ? "🏆" : "🎯";
+    }
+    const subTitle = document.getElementById("result-quiz-title-sub");
+    if (subTitle) subTitle.textContent = quizData.title;
+
+    // Score numbers
+    const scoreNum = document.getElementById("result-score-num");
+    if (scoreNum) scoreNum.textContent = resData.score;
+    const scoreDenom = document.getElementById("result-score-denom");
+    if (scoreDenom) scoreDenom.textContent = `/ ${resData.total_points || 100}`;
+
+    // Meta items
+    const correctCount = document.getElementById("result-correct-count");
+    if (correctCount) correctCount.textContent = `${resData.correct_count} / ${resData.total_questions} Soal`;
+
+    const mins = Math.floor(timeTakenSeconds / 60);
+    const secs = timeTakenSeconds % 60;
+    const timeTakenEl = document.getElementById("result-time-taken");
+    if (timeTakenEl) timeTakenEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+    const xpGain = document.getElementById("result-xp-gain");
+    if (xpGain) xpGain.textContent = `+${resData.score} XP`;
+
+    // Explanations Breakdown
+    const listEl = document.getElementById("result-breakdown-list");
+    if (listEl && resData.details) {
+      listEl.innerHTML = "";
+      const letters = ["A", "B", "C", "D", "E"];
+      resData.details.forEach((item, idx) => {
+        const qOriginal = quizData.questions[idx] || {};
+        const isRight = item.is_correct;
+        const bItem = document.createElement("div");
+        bItem.className = `breakdown-item ${isRight ? 'correct' : 'wrong'}`;
+
+        const userAnsText = item.user_answer !== undefined && item.user_answer !== null
+          ? `${letters[item.user_answer] || item.user_answer}`
+          : "Tidak Dijawab";
+        const correctAnsText = `${letters[item.correct_answer] || item.correct_answer}`;
+
+        bItem.innerHTML = `
+          <div class="breakdown-item-q">${idx + 1}. ${qOriginal.question || 'Soal Evaluasi'}</div>
+          <div class="breakdown-item-meta">
+            <span class="breakdown-ans-badge ${isRight ? 'correct' : 'wrong'}">
+              ${isRight ? '✅ Jawaban Anda Benar' : `❌ Jawaban Anda: (${userAnsText})`}
+            </span>
+            <span style="color: var(--accent-cyan);">Kunci Jawaban: (${correctAnsText})</span>
+          </div>
+          ${item.explanation ? `<div class="breakdown-explanation">💡 <strong>Pembahasan:</strong> ${item.explanation}</div>` : ''}
+        `;
+        listEl.appendChild(bItem);
+      });
+    }
+  }
+
+  function exitQuizPlayer() {
+    if (state.quizTimerInterval) {
+      clearInterval(state.quizTimerInterval);
+      state.quizTimerInterval = null;
+    }
+    state.activeQuiz = null;
+    state.quizAnswers = {};
+    const playerView = document.getElementById("quiz-player-view");
+    const resultView = document.getElementById("quiz-result-view");
+    const listView = document.getElementById("quiz-list-view");
+    if (playerView) playerView.style.display = "none";
+    if (resultView) resultView.style.display = "none";
+    if (listView) listView.style.display = "block";
+  }
+
   // ─── Article / Materials Reading Page Controller ───
   async function fetchArticles() {
     try {
@@ -852,27 +1259,30 @@ int main() {
       if (bottomBar) bottomBar.style.display = "none";
       if (ideBtn) ideBtn.style.display = "none";
       if (bodyContainer) {
+        const aslabBtnHtml = state.isAslabAuthenticated
+          ? `<button class="btn-pixel btn-hero-ghost" id="btn-art-go-aslab">👑 Studio Aslab</button>`
+          : ``;
+        const aslabDesc = state.isAslabAuthenticated
+          ? `Halaman artikel teori saat ini masih kosong. Klik tombol di bawah untuk membuat dan menerbitkan artikel teori baru melalui Aslab Studio.`
+          : `Halaman artikel teori saat ini masih kosong. Artikel bacaan, studi kasus, dan materi rujukan tambahan nantinya akan diterbitkan langsung oleh Asisten Laboratorium (Aslab).`;
+
         bodyContainer.innerHTML = `
           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; background: rgba(15, 23, 42, 0.6); border: 1px dashed rgba(56, 189, 248, 0.3); border-radius: 12px; margin: 30px auto; max-width: 680px;">
             <span style="font-size: 3.2rem; margin-bottom: 14px;">📖</span>
             <h2 style="font-family: var(--font-pixel); font-size: 1.1rem; color: var(--text-primary); margin-bottom: 8px;">Belum Ada Artikel Teori</h2>
             <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; max-width: 520px; margin-bottom: 24px;">
-              Halaman artikel teori saat ini masih kosong. Artikel bacaan, studi kasus, dan materi rujukan tambahan nantinya akan diterbitkan langsung oleh Asisten Laboratorium (Aslab) melalui Aslab Studio.
+              ${aslabDesc}
             </p>
             <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
               <button class="btn-pixel btn-primary-action" id="btn-art-go-course">🗺️ Buka Course Map</button>
-              <button class="btn-pixel btn-hero-ghost" id="btn-art-go-aslab">👑 Studio Aslab</button>
+              ${aslabBtnHtml}
             </div>
           </div>
         `;
         document.getElementById("btn-art-go-course")?.addEventListener("click", () => switchPage("course"));
-        document.getElementById("btn-art-go-aslab")?.addEventListener("click", () => {
-          if (state.isAslabAuthenticated) {
-            switchPage("aslab");
-          } else {
-            openAuthModal("aslab");
-          }
-        });
+        if (state.isAslabAuthenticated) {
+          document.getElementById("btn-art-go-aslab")?.addEventListener("click", () => switchPage("aslab"));
+        }
       }
       return;
     }
@@ -893,7 +1303,7 @@ int main() {
 
     const titleEl = document.getElementById("article-page-header-title");
     if (titleEl) titleEl.textContent = art.title;
-    
+
     const stepEl = document.getElementById("article-reading-step-lbl");
     if (stepEl) stepEl.textContent = `Artikel ${index + 1} dari ${state.articles.length}`;
 
@@ -1042,7 +1452,7 @@ if __name__ == "__main__":
             <div class="podium-avatar">${first.avatar || '👨‍💻'}</div>
             <div class="podium-name">${first.name}</div>
             <div class="podium-nim">${first.nim}</div>
-            <div class="podium-xp-tag">${first.xp} XP • Juara 1</div>
+            <div class="podium-xp-tag">${first.xp} XP • Rank 1</div>
           </div>
           <!-- 3rd Place -->
           <div class="podium-card podium-third">
@@ -1111,21 +1521,39 @@ if __name__ == "__main__":
     tbody.innerHTML = "";
 
     if (state.liveScores.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='7' style='text-align: center; color: var(--text-muted);'>Belum ada submission evaluasi live pada sesi praktikum ini. Kerjakan tugas di IDE dan klik '🚀 Submit Tugas'!</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='7' style='text-align: center; color: var(--text-muted);'>Belum ada submission evaluasi kuis atau ujian live pada sesi ini. Mulai kerjakan kuis di halaman 'Quiz &amp; Ujian'!</td></tr>";
       return;
     }
 
     state.liveScores.forEach((ls) => {
       const tr = document.createElement("tr");
       const isPass = ls.status === "PASSED";
+      const isExam = (ls.assignment_title || "").includes("[UJIAN]");
+      const isQuiz = (ls.assignment_title || "").includes("[QUIZ]");
+      
+      let badgeTypeHtml = "";
+      let cleanTitle = ls.assignment_title || "Evaluasi Praktikum";
+      if (isExam) {
+        badgeTypeHtml = `<span class="quiz-type-badge ujian" style="margin-right: 6px; font-size: 0.55rem;">UJIAN</span>`;
+        cleanTitle = cleanTitle.replace("[UJIAN]", "").trim();
+      } else if (isQuiz) {
+        badgeTypeHtml = `<span class="quiz-type-badge quiz" style="margin-right: 6px; font-size: 0.55rem;">QUIZ</span>`;
+        cleanTitle = cleanTitle.replace("[QUIZ]", "").trim();
+      }
+
       tr.innerHTML = `
         <td style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted);">⏰ ${ls.timestamp || '-'}</td>
         <td><strong style="color: var(--text-primary);">${ls.student_name || ls.username}</strong></td>
         <td style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted);">${ls.nim || '-'}</td>
-        <td><span style="color: var(--text-secondary); font-size: 0.85rem;">${ls.assignment_title || 'Tugas Praktikum'}</span></td>
-        <td style="font-family: var(--font-mono); font-size: 0.78rem;">${ls.exec_time || '15ms'}</td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            ${badgeTypeHtml}
+            <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;">${cleanTitle}</span>
+          </div>
+        </td>
+        <td style="font-family: var(--font-mono); font-size: 0.78rem;">⏱️ ${ls.exec_time || '1m'}</td>
         <td><span class="verdict-badge ${isPass ? 'verdict-pass' : 'verdict-fail'}">${ls.status}</span></td>
-        <td style="text-align: right; font-family: var(--font-pixel); font-size: 0.72rem; color: ${isPass ? '#34d399' : '#f87171'}; font-weight: 700;">+${ls.score} PTS</td>
+        <td style="text-align: right; font-family: var(--font-pixel); font-size: 0.75rem; color: ${isPass ? '#34d399' : '#f87171'}; font-weight: 700;">+${ls.score} PTS</td>
       `;
       tbody.appendChild(tr);
     });
@@ -1167,7 +1595,7 @@ if __name__ == "__main__":
 
       if (!res.ok) throw new Error("Submit live score failed");
       const data = await res.json();
-      
+
       const termBox = document.getElementById("pure-terminal-content");
       if (termBox) {
         termAppend(termBox, `\n[EVALUASI TUGAS LIVE] ${data.assignment_title}`, "cmd-line");
@@ -1358,7 +1786,7 @@ if __name__ == "__main__":
         accounts.forEach((acc) => {
           const opt = document.createElement("option");
           opt.value = acc.username;
-          opt.textContent = `${acc.avatar || '👑'} ${acc.name} (${acc.nim || 'ASLAB'})`;
+          opt.textContent = acc.name;
           sel.appendChild(opt);
         });
       }
@@ -1367,35 +1795,29 @@ if __name__ == "__main__":
     }
   }
 
-  // ─── Unified Auth Modal Controller (3 Tabs: Register, Login Mahasiswa, Login Aslab) ───
-  function openAuthModal(defaultTab = "register") {
+  // ─── Unified Auth Modal Controller (2 Tabs: Login Mahasiswa, Login Aslab) ───
+  function openAuthModal(defaultTab = "login") {
     fetchAslabAccounts();
     const modal = document.getElementById("modal-auth-hub");
     if (!modal) return;
     modal.classList.add("open");
 
-    const tabReg = document.getElementById("tab-auth-register");
     const tabLogin = document.getElementById("tab-auth-login");
     const tabAslab = document.getElementById("tab-auth-aslab");
-    const formReg = document.getElementById("form-auth-register");
     const formLogin = document.getElementById("form-auth-login");
     const formAslab = document.getElementById("form-auth-aslab");
 
-    [tabReg, tabLogin, tabAslab].forEach(t => t && t.classList.remove("active"));
-    [formReg, formLogin, formAslab].forEach(f => f && (f.style.display = "none"));
+    [tabLogin, tabAslab].forEach(t => t && t.classList.remove("active"));
+    [formLogin, formAslab].forEach(f => f && (f.style.display = "none"));
 
     if (defaultTab === "aslab") {
       if (tabAslab) tabAslab.classList.add("active");
       if (formAslab) formAslab.style.display = "block";
       document.getElementById("aslab-auth-pin")?.focus();
-    } else if (defaultTab === "login") {
+    } else {
       if (tabLogin) tabLogin.classList.add("active");
       if (formLogin) formLogin.style.display = "block";
       document.getElementById("login-student-identifier")?.focus();
-    } else {
-      if (tabReg) tabReg.classList.add("active");
-      if (formReg) formReg.style.display = "block";
-      document.getElementById("reg-username")?.focus();
     }
   }
 
@@ -1421,7 +1843,7 @@ if __name__ == "__main__":
       state.isAslabAuthenticated = false;
       sessionStorage.removeItem(CONFIG.STORAGE_KEYS.ASLAB_AUTH);
       setCurrentUser(data.user);
-      
+
       document.getElementById("modal-auth-hub")?.classList.remove("open");
       document.getElementById("form-auth-login")?.reset();
       showToast(data.message || `Selamat datang kembali, ${data.user.name}!`, "success");
@@ -1456,7 +1878,7 @@ if __name__ == "__main__":
       showToast(`Akun mahasiswa "${name}" berhasil didaftarkan!`, "success");
       document.getElementById("modal-auth-hub").classList.remove("open");
       document.getElementById("form-auth-register").reset();
-      
+
       await fetchUsers();
       const newUser = state.users.find(u => u.username === username.toLowerCase().replace(/ /g, "_"));
       if (newUser) {
@@ -1493,8 +1915,8 @@ if __name__ == "__main__":
 
       const aslabUser = data.user || {
         username: aslabId,
-        name: aslabId === "aslab_1" ? "Aslab 1: Koordinator Lab IF'25" : (aslabId === "aslab_2" ? "Aslab 2: Kurikulum & Modul" : "Aslab 3: Evaluasi & Tugas"),
-        nim: aslabId === "aslab_1" ? "ASLAB-01" : (aslabId === "aslab_2" ? "ASLAB-02" : "ASLAB-03"),
+        name: aslabId === "aslab_1" ? "Aslab 1" : (aslabId === "aslab_2" ? "Aslab 2" : "Aslab 3"),
+        nim: aslabId === "aslab_1" ? "ASLAB1" : (aslabId === "aslab_2" ? "ASLAB2" : "ASLAB3"),
         role: "aslab",
         avatar: aslabId === "aslab_1" ? "👑" : (aslabId === "aslab_2" ? "⚡" : "🛡️"),
         xp: 999,
@@ -1540,6 +1962,9 @@ if __name__ == "__main__":
       } else if (tabName === "assignments") {
         topActionBtn.textContent = "➕ Tambah Tugas";
         topActionBtn.onclick = () => openAddAssignmentModal();
+      } else if (tabName === "quizzes") {
+        topActionBtn.textContent = "➕ Tambah Kuis";
+        topActionBtn.onclick = () => openAddQuizModal();
       } else if (tabName === "articles") {
         topActionBtn.textContent = "➕ Tambah Artikel";
         topActionBtn.onclick = () => openAddArticleModal();
@@ -1557,9 +1982,10 @@ if __name__ == "__main__":
       badgeEl.textContent = `${state.currentUser.avatar || '👑'} ${state.currentUser.name.toUpperCase()}`;
     }
 
-    // Render 4 Sections
+    // Render 5 Sections
     renderAslabMaterialsTable();
     renderAslabAssignmentsTable();
+    renderAslabQuizzesTable();
     renderAslabArticlesTable();
     fetchSubmissionsFeed();
     switchAslabTab(state.aslabTab || "modules");
@@ -1613,6 +2039,273 @@ if __name__ == "__main__":
       tr.querySelector(".btn-table-del").addEventListener("click", () => deleteAslabAssignment(a.id));
       tbody.appendChild(tr);
     });
+  }
+
+  function renderAslabQuizzesTable() {
+    const tbody = document.getElementById("aslab-quizzes-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    if (document.getElementById("aslab-count-quiz")) {
+      document.getElementById("aslab-count-quiz").textContent = state.quizzes.length;
+    }
+
+    state.quizzes.forEach((q) => {
+      const tr = document.createElement("tr");
+      const isExam = q.type === "ujian";
+      const qCount = q.question_count || (q.questions ? q.questions.length : 0);
+      const isActive = q.is_active !== 0;
+
+      tr.innerHTML = `
+        <td style="font-family: var(--font-mono);">#${q.id}</td>
+        <td><strong>${q.title}</strong></td>
+        <td><span class="quiz-type-badge ${isExam ? 'ujian' : 'quiz'}">${isExam ? 'UJIAN' : 'QUIZ'}</span></td>
+        <td style="font-family: var(--font-mono); font-size: 0.78rem;">⏱️ ${q.duration_minutes || 15} Menit</td>
+        <td style="font-family: var(--font-mono);">${qCount} Soal</td>
+        <td style="font-family: var(--font-pixel); font-size: 0.65rem; color: var(--accent-gold);">+${q.points || 100}</td>
+        <td><span style="color: ${isActive ? '#34d399' : '#94a3b8'}; font-size: 0.75rem; font-weight: 600;">${isActive ? '🟢 Aktif' : '⚪ Nonaktif'}</span></td>
+        <td style="text-align: right;">
+          <button class="btn-table-edit" data-id="${q.id}">Edit ✎</button>
+          <button class="btn-table-del" data-id="${q.id}">Hapus ✕</button>
+        </td>
+      `;
+      tr.querySelector(".btn-table-edit").addEventListener("click", () => openEditQuizModal(q));
+      tr.querySelector(".btn-table-del").addEventListener("click", () => deleteAslabQuiz(q.id));
+      tbody.appendChild(tr);
+    });
+  }
+
+  function openAddQuizModal() {
+    document.getElementById("aslab-quiz-edit-id").value = "";
+    document.getElementById("modal-heading-quiz").textContent = "Tambah Kuis / Ujian Baru";
+    document.getElementById("form-add-quiz").reset();
+    state.aslabQuizBuilderQuestions = [
+      {
+        id: 1,
+        question: "",
+        code_snippet: "",
+        options: ["", "", "", ""],
+        correct_answer: 0,
+        explanation: "",
+        points: 25
+      }
+    ];
+    renderAslabQuizBuilderQuestions();
+    document.getElementById("modal-aslab-quiz").classList.add("open");
+  }
+
+  async function openEditQuizModal(q) {
+    document.getElementById("aslab-quiz-edit-id").value = q.id;
+    document.getElementById("modal-heading-quiz").textContent = `Edit Kuis #${q.id}`;
+    document.getElementById("quiz-form-title").value = q.title || "";
+    document.getElementById("quiz-form-type").value = q.type || "quiz";
+    document.getElementById("quiz-form-category").value = q.category || "";
+    document.getElementById("quiz-form-duration").value = q.duration_minutes || 15;
+    document.getElementById("quiz-form-schedule").value = q.schedule || "";
+    document.getElementById("quiz-form-points").value = q.points || 100;
+    document.getElementById("quiz-form-desc").value = q.description || "";
+
+    // Fetch full questions if not loaded
+    if (!q.questions) {
+      try {
+        const res = await fetch(`${CONFIG.ENDPOINTS.QUIZZES}/${q.id}`);
+        if (res.ok) {
+          const detail = await res.json();
+          q.questions = detail.questions || [];
+        }
+      } catch (e) {
+        q.questions = [];
+      }
+    }
+
+    state.aslabQuizBuilderQuestions = q.questions && q.questions.length > 0 ? JSON.parse(JSON.stringify(q.questions)) : [
+      {
+        id: 1,
+        question: "",
+        code_snippet: "",
+        options: ["", "", "", ""],
+        correct_answer: 0,
+        explanation: "",
+        points: 25
+      }
+    ];
+    renderAslabQuizBuilderQuestions();
+    document.getElementById("modal-aslab-quiz").classList.add("open");
+  }
+
+  function renderAslabQuizBuilderQuestions() {
+    const builderContainer = document.getElementById("aslab-quiz-questions-builder");
+    if (!builderContainer) return;
+    builderContainer.innerHTML = "";
+
+    state.aslabQuizBuilderQuestions.forEach((q, idx) => {
+      const qCard = document.createElement("div");
+      qCard.className = "question-builder-item";
+      qCard.innerHTML = `
+        <div class="q-builder-top">
+          <strong>BUTIR SOAL #${idx + 1}</strong>
+          ${state.aslabQuizBuilderQuestions.length > 1 ? `<button type="button" class="q-builder-del" data-idx="${idx}">Hapus Soal ✕</button>` : ''}
+        </div>
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label style="font-size: 0.78rem;">Teks Pertanyaan *</label>
+          <input type="text" class="form-input q-input-text" data-idx="${idx}" value="${(q.question || '').replace(/"/g, '&quot;')}" placeholder="Tuliskan pertanyaan soal..." required>
+        </div>
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label style="font-size: 0.78rem;">Potongan Kode C (Opsional)</label>
+          <textarea class="form-input q-input-code" data-idx="${idx}" rows="2" placeholder="int a = 10; printf(&quot;%d&quot;, a);">${q.code_snippet || ''}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label style="font-size: 0.78rem;">Pilihan Jawaban (A, B, C, D) &amp; Kunci Jawaban *</label>
+          <div class="q-builder-options-grid">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="radio" name="correct_ans_${idx}" value="0" ${q.correct_answer === 0 ? 'checked' : ''} class="q-correct-radio" data-idx="${idx}">
+              <span style="font-family: var(--font-pixel); font-size: 0.6rem; color: var(--accent-cyan);">A.</span>
+              <input type="text" class="form-input q-opt-input" data-idx="${idx}" data-opt="0" value="${(q.options && q.options[0] || '').replace(/"/g, '&quot;')}" placeholder="Opsi A" required style="width: 100%;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="radio" name="correct_ans_${idx}" value="1" ${q.correct_answer === 1 ? 'checked' : ''} class="q-correct-radio" data-idx="${idx}">
+              <span style="font-family: var(--font-pixel); font-size: 0.6rem; color: var(--accent-cyan);">B.</span>
+              <input type="text" class="form-input q-opt-input" data-idx="${idx}" data-opt="1" value="${(q.options && q.options[1] || '').replace(/"/g, '&quot;')}" placeholder="Opsi B" required style="width: 100%;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="radio" name="correct_ans_${idx}" value="2" ${q.correct_answer === 2 ? 'checked' : ''} class="q-correct-radio" data-idx="${idx}">
+              <span style="font-family: var(--font-pixel); font-size: 0.6rem; color: var(--accent-cyan);">C.</span>
+              <input type="text" class="form-input q-opt-input" data-idx="${idx}" data-opt="2" value="${(q.options && q.options[2] || '').replace(/"/g, '&quot;')}" placeholder="Opsi C" required style="width: 100%;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="radio" name="correct_ans_${idx}" value="3" ${q.correct_answer === 3 ? 'checked' : ''} class="q-correct-radio" data-idx="${idx}">
+              <span style="font-family: var(--font-pixel); font-size: 0.6rem; color: var(--accent-cyan);">D.</span>
+              <input type="text" class="form-input q-opt-input" data-idx="${idx}" data-opt="3" value="${(q.options && q.options[3] || '').replace(/"/g, '&quot;')}" placeholder="Opsi D" required style="width: 100%;">
+            </div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 0.78rem;">Penjelasan / Pembahasan Kunci Jawaban</label>
+          <input type="text" class="form-input q-input-exp" data-idx="${idx}" value="${(q.explanation || '').replace(/"/g, '&quot;')}" placeholder="Jelaskan alasan jawaban yang benar...">
+        </div>
+      `;
+
+      // Bind input events to keep state synced
+      qCard.querySelector(".q-input-text").addEventListener("input", (e) => {
+        state.aslabQuizBuilderQuestions[idx].question = e.target.value;
+      });
+      qCard.querySelector(".q-input-code").addEventListener("input", (e) => {
+        state.aslabQuizBuilderQuestions[idx].code_snippet = e.target.value;
+      });
+      qCard.querySelector(".q-input-exp").addEventListener("input", (e) => {
+        state.aslabQuizBuilderQuestions[idx].explanation = e.target.value;
+      });
+      qCard.querySelectorAll(".q-opt-input").forEach(optInp => {
+        optInp.addEventListener("input", (e) => {
+          const optIdx = parseInt(e.target.dataset.opt);
+          if (!state.aslabQuizBuilderQuestions[idx].options) {
+            state.aslabQuizBuilderQuestions[idx].options = ["", "", "", ""];
+          }
+          state.aslabQuizBuilderQuestions[idx].options[optIdx] = e.target.value;
+        });
+      });
+      qCard.querySelectorAll(".q-correct-radio").forEach(radio => {
+        radio.addEventListener("change", (e) => {
+          state.aslabQuizBuilderQuestions[idx].correct_answer = parseInt(e.target.value);
+        });
+      });
+
+      const delBtn = qCard.querySelector(".q-builder-del");
+      if (delBtn) {
+        delBtn.addEventListener("click", () => {
+          state.aslabQuizBuilderQuestions.splice(idx, 1);
+          renderAslabQuizBuilderQuestions();
+        });
+      }
+
+      builderContainer.appendChild(qCard);
+    });
+  }
+
+  function aslabQuizBuilderAddQuestion() {
+    state.aslabQuizBuilderQuestions.push({
+      id: state.aslabQuizBuilderQuestions.length + 1,
+      question: "",
+      code_snippet: "",
+      options: ["", "", "", ""],
+      correct_answer: 0,
+      explanation: "",
+      points: 25
+    });
+    renderAslabQuizBuilderQuestions();
+  }
+
+  async function submitAslabQuiz(e) {
+    e.preventDefault();
+    const editId = document.getElementById("aslab-quiz-edit-id").value;
+    const title = document.getElementById("quiz-form-title").value.trim();
+    const type = document.getElementById("quiz-form-type").value;
+    const category = document.getElementById("quiz-form-category").value.trim() || "Dasar Pemrograman";
+    const duration_minutes = parseInt(document.getElementById("quiz-form-duration").value) || 15;
+    const schedule = document.getElementById("quiz-form-schedule").value.trim() || "Sesi Praktikum";
+    const points = parseInt(document.getElementById("quiz-form-points").value) || 100;
+    const description = document.getElementById("quiz-form-desc").value.trim();
+
+    if (state.aslabQuizBuilderQuestions.length === 0) {
+      showToast("Kuis harus memiliki minimal 1 butir soal!", "error");
+      return;
+    }
+
+    // Validate that questions and options are filled
+    for (let i = 0; i < state.aslabQuizBuilderQuestions.length; i++) {
+      const q = state.aslabQuizBuilderQuestions[i];
+      if (!q.question.trim()) {
+        showToast(`Teks pertanyaan Soal #${i + 1} belum diisi!`, "error");
+        return;
+      }
+      if (!q.options || q.options.some(opt => !opt.trim())) {
+        showToast(`Seluruh pilihan jawaban A-D pada Soal #${i + 1} wajib diisi!`, "error");
+        return;
+      }
+    }
+
+    const payload = {
+      title,
+      type,
+      category,
+      duration_minutes,
+      schedule,
+      points,
+      description,
+      questions_json: JSON.stringify(state.aslabQuizBuilderQuestions),
+      is_active: 1
+    };
+
+    const isEdit = Boolean(editId);
+    const url = isEdit ? `${CONFIG.ENDPOINTS.QUIZZES}/${editId}` : CONFIG.ENDPOINTS.QUIZZES;
+    const method = isEdit ? "PUT" : "POST";
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Save quiz failed");
+      showToast(isEdit ? "Kuis berhasil diperbarui!" : "Kuis baru berhasil diterbitkan!", "success");
+      document.getElementById("modal-aslab-quiz").classList.remove("open");
+      await fetchQuizzes();
+      renderAslabQuizzesTable();
+    } catch (e) {
+      showToast("Gagal menyimpan kuis: " + e.message, "error");
+    }
+  }
+
+  async function deleteAslabQuiz(id) {
+    if (!confirm(`Yakin ingin menghapus kuis #${id}? Seluruh riwayat submission kuis ini juga akan dihapus.`)) return;
+    try {
+      const res = await fetch(`${CONFIG.ENDPOINTS.QUIZZES}/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      showToast("Kuis berhasil dihapus!", "success");
+      await fetchQuizzes();
+      renderAslabQuizzesTable();
+    } catch (e) {
+      showToast("Gagal menghapus kuis: " + e.message, "error");
+    }
   }
 
   function renderAslabArticlesTable() {
@@ -2032,11 +2725,19 @@ if __name__ == "__main__":
     };
 
     // Navigation Buttons
-    on("nav-brand-btn", "click", (e) => { e.preventDefault(); switchPage("landing"); });
+    on("nav-brand-btn", "click", (e) => {
+      e.preventDefault();
+      if (state.currentUser) {
+        switchPage(state.isAslabAuthenticated ? "aslab" : "dashboard");
+      } else {
+        switchPage("landing");
+      }
+    });
     on("nav-btn-landing", "click", () => switchPage("landing"));
     on("nav-btn-dashboard", "click", () => switchPage("dashboard"));
     on("nav-btn-course", "click", () => switchPage("course"));
     on("nav-btn-assignment", "click", () => switchPage("assignment"));
+    on("nav-btn-quiz", "click", () => switchPage("quiz"));
     on("nav-btn-leaderboard", "click", () => switchPage("leaderboard"));
     on("nav-btn-materials", "click", () => switchPage("materials"));
     on("nav-btn-ide", "click", () => switchPage("ide"));
@@ -2067,25 +2768,20 @@ if __name__ == "__main__":
     });
     on("drop-btn-account", "click", () => {
       if (userMenu) userMenu.classList.remove("open");
-      openAuthModal("register");
+      openAuthModal("login");
     });
     on("drop-btn-signout", "click", () => {
       if (userMenu) userMenu.classList.remove("open");
       handleSignOut();
     });
 
-    // Topbar "+ Register" Button
-    on("btn-open-register-modal", "click", () => openAuthModal("register"));
+    // Topbar Login Button
+    on("btn-open-register-modal", "click", () => openAuthModal("login"));
 
     // Auth Hub Modal Tabs & Actions
-    on("tab-auth-register", "click", () => openAuthModal("register"));
     on("tab-auth-login", "click", () => openAuthModal("login"));
     on("tab-auth-aslab", "click", () => openAuthModal("aslab"));
     on("btn-close-auth-modal", "click", () => {
-      const modal = document.getElementById("modal-auth-hub");
-      if (modal) modal.classList.remove("open");
-    });
-    on("btn-cancel-auth-modal", "click", () => {
       const modal = document.getElementById("modal-auth-hub");
       if (modal) modal.classList.remove("open");
     });
@@ -2097,7 +2793,6 @@ if __name__ == "__main__":
       const modal = document.getElementById("modal-auth-hub");
       if (modal) modal.classList.remove("open");
     });
-    on("form-auth-register", "submit", submitRegisterUser);
     on("form-auth-login", "submit", submitStudentLogin);
     on("form-auth-aslab", "submit", submitAslabLogin);
 
@@ -2116,8 +2811,8 @@ if __name__ == "__main__":
 
     function openProfileCustomizationModal() {
       if (!state.currentUser) {
-        showToast("Silakan registrasi atau pilih akun terlebih dahulu!", "info");
-        openAuthModal("register");
+        showToast("Silakan masuk menggunakan NIM / Username terlebih dahulu!", "info");
+        openAuthModal("login");
         return;
       }
 
@@ -2253,11 +2948,11 @@ if __name__ == "__main__":
       spotlightResults.innerHTML = "";
       const q = (query || "").toLowerCase().trim();
 
-      const matchedMats = state.materials.filter(m => 
+      const matchedMats = state.materials.filter(m =>
         !q || m.title.toLowerCase().includes(q) || m.summary.toLowerCase().includes(q) || m.category.toLowerCase().includes(q)
       );
 
-      const matchedAss = state.assignments.filter(a => 
+      const matchedAss = state.assignments.filter(a =>
         !q || (a.title && a.title.toLowerCase().includes(q)) || (a.description && a.description.toLowerCase().includes(q))
       );
 
@@ -2402,7 +3097,8 @@ if __name__ == "__main__":
     // Landing Page CTAs
     on("btn-landing-start", "click", () => switchPage("dashboard"));
     on("btn-landing-explore", "click", () => switchPage("course"));
-    
+    on("badge-aslab-landing", "click", () => switchPage("aslab"));
+
     // Scroll Indicator Click
     on("hero-scroll-cue-btn", "click", () => {
       const anchor = document.getElementById("landing-modules-anchor");
@@ -2445,7 +3141,7 @@ if __name__ == "__main__":
       switchPage("course");
     });
     on("btn-view-course-map-side", "click", () => switchPage("course"));
-    on("btn-switch-user-side", "click", () => openAuthModal("register"));
+    on("btn-switch-user-side", "click", () => openAuthModal("login"));
     on("btn-open-aslab-studio-side", "click", () => switchPage("aslab"));
 
     // Course Page CTAs
@@ -2517,6 +3213,42 @@ if __name__ == "__main__":
       renderLeaderboard(e.target.value);
     });
 
+    // Quiz & Exam Page Events
+    on("qfilter-all", "click", () => {
+      state.quizFilter = "all";
+      document.querySelectorAll(".quiz-type-chips .q-chip").forEach(c => c.classList.toggle("active", c.id === "qfilter-all"));
+      renderQuizzesList();
+    });
+    on("qfilter-quiz", "click", () => {
+      state.quizFilter = "quiz";
+      document.querySelectorAll(".quiz-type-chips .q-chip").forEach(c => c.classList.toggle("active", c.id === "qfilter-quiz"));
+      renderQuizzesList();
+    });
+    on("qfilter-ujian", "click", () => {
+      state.quizFilter = "ujian";
+      document.querySelectorAll(".quiz-type-chips .q-chip").forEach(c => c.classList.toggle("active", c.id === "qfilter-ujian"));
+      renderQuizzesList();
+    });
+
+    on("btn-quit-quiz", "click", () => {
+      if (confirm("Yakin ingin keluar dari pengerjaan kuis? Jawaban belum tersimpan.")) {
+        exitQuizPlayer();
+      }
+    });
+    on("btn-submit-quiz-direct", "click", submitActiveQuiz);
+    on("btn-goto-livescore-quiz", "click", () => {
+      switchPage("leaderboard");
+      document.getElementById("btn-lead-tab-live")?.click();
+    });
+    on("btn-result-view-livescore", "click", () => {
+      switchPage("leaderboard");
+      document.getElementById("btn-lead-tab-live")?.click();
+    });
+    on("btn-result-back-quizzes", "click", () => {
+      exitQuizPlayer();
+      switchPage("quiz");
+    });
+
     // Course Workspace CTAs
     on("btn-back-dashboard", "click", () => switchPage("course"));
     on("btn-prev-material", "click", () => {
@@ -2554,6 +3286,7 @@ if __name__ == "__main__":
     // Aslab Studio Navigation Tabs
     on("tab-aslab-modules", "click", () => switchAslabTab("modules"));
     on("tab-aslab-assignments", "click", () => switchAslabTab("assignments"));
+    on("tab-aslab-quizzes", "click", () => switchAslabTab("quizzes"));
     on("tab-aslab-articles", "click", () => switchAslabTab("articles"));
     on("tab-aslab-audit", "click", () => switchAslabTab("audit"));
 
@@ -2568,6 +3301,13 @@ if __name__ == "__main__":
     on("btn-close-ass-modal", "click", () => document.getElementById("modal-aslab-assignment")?.classList.remove("open"));
     on("btn-cancel-ass-modal", "click", () => document.getElementById("modal-aslab-assignment")?.classList.remove("open"));
     on("form-add-assignment", "submit", submitAslabAssignment);
+
+    // Aslab Studio Quiz Modals
+    on("btn-aslab-add-new-quiz", "click", openAddQuizModal);
+    on("btn-aslab-add-question", "click", aslabQuizBuilderAddQuestion);
+    on("btn-close-quiz-modal", "click", () => document.getElementById("modal-aslab-quiz")?.classList.remove("open"));
+    on("btn-cancel-quiz-modal", "click", () => document.getElementById("modal-aslab-quiz")?.classList.remove("open"));
+    on("form-add-quiz", "submit", submitAslabQuiz);
 
     // Aslab Studio Article Modals
     on("btn-aslab-add-new-art", "click", openAddArticleModal);
@@ -2592,11 +3332,13 @@ if __name__ == "__main__":
         const m3 = document.getElementById("modal-edit-profile");
         const m4 = document.getElementById("modal-aslab-assignment");
         const m5 = document.getElementById("modal-aslab-article");
+        const m6 = document.getElementById("modal-aslab-quiz");
         if (m1) m1.classList.remove("open");
         if (m2) m2.classList.remove("open");
         if (m3) m3.classList.remove("open");
         if (m4) m4.classList.remove("open");
         if (m5) m5.classList.remove("open");
+        if (m6) m6.classList.remove("open");
         closeSpotlightSearch();
         closeChatDrawer();
         if (userMenu) userMenu.classList.remove("open");
@@ -2618,6 +3360,7 @@ if __name__ == "__main__":
     await fetchAslabAccounts();
     await fetchMaterials();
     await fetchAssignments();
+    await fetchQuizzes();
     await fetchArticles();
     await fetchLeaderboard();
     await fetchLiveScores();

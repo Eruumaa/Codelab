@@ -22,7 +22,7 @@
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=3.9">
 </head>
 <body class="theme-cyber">
 
@@ -54,11 +54,12 @@
         </a>
         <div class="nav-divider"></div>
         <nav class="nav-menu">
-          <button class="nav-link" data-target="landing" id="nav-btn-landing">Explore</button>
+          <button class="nav-link guest-only" data-target="landing" id="nav-btn-landing">Explore</button>
           <button class="nav-link user-auth-only" data-target="dashboard" id="nav-btn-dashboard" style="display: none;">Home</button>
           <button class="nav-link" data-target="course" id="nav-btn-course">Course Map</button>
           <button class="nav-link user-auth-only" data-target="assignment" id="nav-btn-assignment" style="display: none;">Assignment</button>
-          <button class="nav-link" data-target="leaderboard" id="nav-btn-leaderboard">Leaderboard</button>
+          <button class="nav-link user-auth-only" data-target="quiz" id="nav-btn-quiz" style="display: none;">Quiz &amp; Exam</button>
+          <button class="nav-link user-auth-only" data-target="leaderboard" id="nav-btn-leaderboard" style="display: none;">Leaderboard</button>
           <button class="nav-link user-auth-only" data-target="materials" id="nav-btn-materials" style="display: none;">Articles</button>
           <button class="nav-link" data-target="ide" id="nav-btn-ide">IDE</button>
           <!-- Special Aslab Tab (Visible only when logged in as Aslab) -->
@@ -96,9 +97,9 @@
           <span class="avatar-chevron">▾</span>
         </div>
 
-        <!-- Register / Login Button (Matching header.png yellow pixel button) -->
-        <button class="btn-pixel btn-nav-cta btn-header-register" id="btn-open-register-modal" title="Daftar Mahasiswa atau Login Aslab">
-          + Register
+        <!-- Login Button -->
+        <button class="btn-pixel btn-header-register" id="btn-open-register-modal" title="Masuk Akun Mahasiswa atau Aslab">
+          + Login
         </button>
 
         <!-- User Dropdown Menu (Styled strictly matching userclick.png) -->
@@ -137,7 +138,7 @@
       <!-- Fullscreen Clean GIF Background (Assets/8351164.gif) -->
       <div class="landing-hero-backdrop">
         <div class="landing-hero-content">
-          <div class="hero-retro-badge">PLATFORM PRAKTIKUM PEMROGRAMAN IF'25</div>
+          <div class="hero-retro-badge">PRAKTIKUM PEMROGRAMAN SEMESTER 1 • ANGKATAN '26</div>
           <h1 class="hero-main-title">Start Your<br>Coding Adventure</h1>
           <p class="hero-tagline">Platform belajar praktikum pemrograman khusus tanpa internet</p>
           
@@ -240,7 +241,7 @@
             <div class="feature-visual">
               <div class="visual-badge-showcase">
                 <span class="v-badge">👨‍💻 Akun Praktikan: Khusus Mahasiswa</span>
-                <span class="v-badge">🔒 Aslab Studio: Proteksi PIN Khusus</span>
+                <span class="v-badge" id="badge-aslab-landing" style="cursor: pointer; background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.5);" title="Klik untuk Masuk Portal Aslab">🔒 Aslab Studio: Khusus Aslab ↗</span>
                 <span class="v-badge">📊 Database Submission Lokal Aktif</span>
               </div>
             </div>
@@ -369,7 +370,7 @@
 
           <!-- Section: Jadwal & Pengumuman Lab -->
           <div class="dash-section">
-            <h3 class="dash-section-title">Informasi &amp; Panduan Lab IF'25</h3>
+            <h3 class="dash-section-title">Informasi &amp; Panduan Praktikum (Semester 1)</h3>
             <div class="community-cards-grid" id="dash-lab-info-grid">
               <div class="comm-card">
                 <div class="comm-author">
@@ -448,7 +449,7 @@
 
           <!-- Lab Schedule Widget -->
           <div class="side-widget lab-schedule-widget">
-            <h4 class="side-widget-title">JADWAL PRAKTIKUM IF'25</h4>
+            <h4 class="side-widget-title">JADWAL PRAKTIKUM PEMROGRAMAN '26</h4>
             <div style="display: flex; flex-direction: column; gap: 12px;">
               <div class="schedule-item">
                 <div class="schedule-date">
@@ -566,7 +567,7 @@
       <div class="assignment-hero-banner">
         <div class="assignment-hero-content">
           <span class="assignment-tag-badge">📋 TUGAS &amp; EVALUASI PRAKTIKUM</span>
-          <h1 class="assignment-main-heading">Daftar Tugas Praktikum IF'25</h1>
+          <h1 class="assignment-main-heading">Daftar Tugas Praktikum Pemrograman</h1>
           <p class="assignment-subheading">Selesaikan tugas praktikum pemrograman C sesuai dengan modul masing-masing. Buka tugas langsung di IDE untuk mulai menulis kode dan mengujinya.</p>
         </div>
       </div>
@@ -574,6 +575,163 @@
       <div class="assignment-layout-wrapper">
         <div class="assignment-grid" id="assignment-cards-grid">
           <!-- Populated dynamically from GET /assignments -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ PAGE: QUIZ & EXAM PRAKTIKUM ════════════════════ -->
+    <section id="view-quiz" class="app-page">
+      <!-- 1. Quiz Selection List View -->
+      <div id="quiz-list-view">
+        <div class="quiz-hero-banner">
+          <div class="quiz-hero-content">
+            <span class="quiz-tag-badge">📋 EVALUASI QUIZ &amp; EXAM PRAKTIKUM</span>
+            <h1 class="quiz-main-heading">Quiz &amp; Exam Pemrograman C</h1>
+            <p class="quiz-subheading">Uji pemahaman sintaks C, analisis output kode, alur logika pointer &amp; fungsi. Nilai hasil kuis akan langsung dicatat di Live Scoreboard!</p>
+          </div>
+        </div>
+
+        <div class="quiz-layout-wrapper">
+          <div class="quiz-filter-bar">
+            <div class="quiz-type-chips">
+              <button class="q-chip active" data-qfilter="all" id="qfilter-all">Semua (Quiz &amp; Exam)</button>
+              <button class="q-chip" data-qfilter="quiz" id="qfilter-quiz">🎯 Quiz Praktikum</button>
+              <button class="q-chip" data-qfilter="ujian" id="qfilter-ujian">⚡ Exam</button>
+            </div>
+            <div class="quiz-action-right">
+              <button class="btn-pixel btn-sandbox" id="btn-goto-livescore-quiz">
+                ⚡ Buka Live Scoreboard →
+              </button>
+            </div>
+          </div>
+
+          <div class="quiz-cards-grid" id="quiz-cards-grid">
+            <!-- Populated dynamically from GET /quizzes -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Interactive Quiz Player / Exam Room (Hidden until quiz started) -->
+      <div id="quiz-player-view" style="display: none;">
+        <div class="quiz-player-topbar">
+          <div class="q-topbar-left">
+            <button class="btn-pixel btn-back" id="btn-quit-quiz">← Batal / Keluar</button>
+            <div class="q-title-info">
+              <span class="q-badge-type" id="player-quiz-type-badge">QUIZ</span>
+              <h3 class="q-title-text" id="player-quiz-title">Quiz 1: Pengantar Bahasa C</h3>
+            </div>
+          </div>
+
+          <div class="q-topbar-center">
+            <div class="quiz-timer-box" id="quiz-timer-box">
+              <span class="timer-icon">⏱️</span>
+              <span class="timer-digits" id="quiz-timer-digits">15:00</span>
+            </div>
+          </div>
+
+          <div class="q-topbar-right">
+            <span class="q-points-badge" id="player-quiz-points-badge">100 Poin</span>
+            <button class="btn-pixel btn-primary-action" id="btn-submit-quiz-direct">
+              🏁 Kirim Jawaban
+            </button>
+          </div>
+        </div>
+
+        <div class="quiz-player-layout">
+          <!-- Left: Question Navigator -->
+          <div class="quiz-nav-sidebar">
+            <h4 class="q-nav-title">NOMOR SOAL</h4>
+            <div class="q-nav-grid" id="quiz-nav-grid">
+              <!-- Question Number Pills (1, 2, 3...) -->
+            </div>
+            <div class="q-nav-legend">
+              <div class="legend-item"><span class="legend-dot answered"></span> Terjawab</div>
+              <div class="legend-item"><span class="legend-dot active"></span> Aktif</div>
+              <div class="legend-item"><span class="legend-dot unanswered"></span> Belum</div>
+            </div>
+          </div>
+
+          <!-- Center: Active Question Workspace -->
+          <div class="quiz-main-workspace">
+            <div class="q-card-box">
+              <div class="q-header-meta">
+                <span class="q-num-label" id="q-active-num-lbl">Soal 1 dari 4</span>
+                <span class="q-pts-label" id="q-active-pts-lbl">25 Poin</span>
+              </div>
+
+              <div class="q-question-text" id="q-active-text">
+                Pertanyaan akan dimuat di sini...
+              </div>
+
+              <div class="q-code-snippet-wrap" id="q-active-code-wrap" style="display: none;">
+                <div class="q-code-header">KODE PROGRAM (C):</div>
+                <pre class="q-code-block" id="q-active-code"></pre>
+              </div>
+
+              <!-- Multiple Choice Options (A, B, C, D) -->
+              <div class="q-options-container" id="q-active-options">
+                <!-- Option pills generated dynamically -->
+              </div>
+
+              <div class="q-footer-nav-actions">
+                <button class="btn-pixel btn-back" id="btn-q-prev">◀ Sebelumnya</button>
+                <button class="btn-pixel btn-primary-action" id="btn-q-next">Selanjutnya ▶</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Quiz Result Summary (Shown after submit) -->
+      <div id="quiz-result-view" style="display: none;">
+        <div class="quiz-result-container">
+          <div class="result-celebrate-header">
+            <div class="result-trophy-icon" id="result-trophy-icon">🏆</div>
+            <h2 class="result-heading" id="result-verdict-title">Kuis Berhasil Diselesaikan!</h2>
+            <p class="result-sub" id="result-quiz-title-sub">Quiz 1: Pengantar Bahasa C &amp; Format Specifier</p>
+          </div>
+
+          <div class="result-score-card">
+            <div class="result-score-big">
+              <span class="score-number" id="result-score-num">100</span>
+              <span class="score-denom" id="result-score-denom">/ 100</span>
+            </div>
+            <div class="result-meta-grid">
+              <div class="result-meta-item">
+                <span class="meta-lbl">Jawaban Benar</span>
+                <strong class="meta-val" id="result-correct-count">4 / 4 Soal</strong>
+              </div>
+              <div class="result-meta-item">
+                <span class="meta-lbl">Waktu Pengerjaan</span>
+                <strong class="meta-val" id="result-time-taken">02:45</strong>
+              </div>
+              <div class="result-meta-item">
+                <span class="meta-lbl">Perolehan XP</span>
+                <strong class="meta-val" style="color: var(--accent-gold);" id="result-xp-gain">+100 XP</strong>
+              </div>
+              <div class="result-meta-item">
+                <span class="meta-lbl">Status Live Score</span>
+                <strong class="meta-val" style="color: var(--accent-green);" id="result-live-status">✅ TERCATAT LIVE</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Answer Explanations Review -->
+          <div class="result-breakdown-box">
+            <h3 class="breakdown-title">Pembahasan &amp; Kunci Jawaban</h3>
+            <div class="breakdown-list" id="result-breakdown-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <div class="result-actions-footer">
+            <button class="btn-pixel btn-back" id="btn-result-back-quizzes">
+              📋 Kembali ke Daftar Kuis
+            </button>
+            <button class="btn-pixel btn-primary-action" id="btn-result-view-livescore">
+              ⚡ Lihat di Live Scoreboard →
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -613,7 +771,6 @@
       <div class="pure-ide-wrapper">
         <div class="pure-ide-topbar">
           <div class="pure-ide-topbar-left">
-            <span class="ide-tag-badge">🚀 IDE</span>
             <button class="editor-btn-secondary" id="btn-toggle-ide-notes" title="Buka / Tutup Panel Catatan & Coret-coret">
               📝 Scratchpad &amp; Notes
             </button>
@@ -664,7 +821,7 @@
             </div>
 
             <div class="pure-notes-body">
-              <textarea id="pure-scratchpad-area" class="pure-scratchpad-textarea" placeholder="Tulis catatan, coret-coret logika kode, pseudocode, atau daftar test case di sini... (Tersimpan otomatis)"></textarea>
+              <textarea id="pure-scratchpad-area" class="pure-scratchpad-textarea" placeholder="Tulis catatan, coret-coret logika kode, pseudocode, atau daftar test case di sini..."></textarea>
             </div>
           </div>
 
@@ -979,8 +1136,8 @@
             <span class="pill-lvl">🏆 HALL OF FAME</span>
             <span class="pill-type">REAL-TIME RANKING</span>
           </div>
-          <h1 class="leaderboard-main-h1">Leaderboard &amp; Live Score IF'25</h1>
-          <p class="leaderboard-sub">Pantau klasemen mahasiswa, perolehan XP praktikum, dan skor evaluasi pengerjaan tugas secara langsung.</p>
+          <h1 class="leaderboard-main-h1">Leaderboard &amp; Live Score Praktikum '26</h1>
+          <p class="leaderboard-sub">Pantau klasemen akumulasi XP praktikan Angkatan 2026 dan Live Scoreboard evaluasi secara real-time.</p>
         </div>
       </div>
 
@@ -994,10 +1151,10 @@
         <div class="leaderboard-tabs-bar">
           <div class="leaderboard-nav-btns">
             <button class="lead-tab-btn active" data-lead-tab="xp" id="btn-lead-tab-xp">
-              🏆 Klasemen XP Mahasiswa
+              🏆 Klasemen XP Praktikan
             </button>
             <button class="lead-tab-btn" data-lead-tab="livescore" id="btn-lead-tab-live">
-              ⚡ Live Scoreboard Tugas
+              ⚡ Live Scoreboard
             </button>
           </div>
           <div class="leaderboard-actions-right">
@@ -1029,13 +1186,13 @@
           </div>
         </div>
 
-        <!-- Tab 2: Live Scoreboard Feed -->
+        <!-- Tab 2: Live Scoreboard Feed (Khusus Quiz & Ujian) -->
         <div class="leaderboard-view-pane" id="pane-lead-livescore" style="display: none;">
           <div class="lead-table-card">
             <div class="live-score-status-bar">
               <span class="live-pulse-dot"></span>
-              <strong style="color: var(--accent-cyan);">Sesi Evaluasi Live Aktif</strong>
-              <span style="color: var(--text-muted); font-size: 0.82rem;">— Nilai tugas dihitung langsung dari tes compiler &amp; eksekusi kode di IDE</span>
+              <strong style="color: var(--accent-cyan);">Live Scoreboard Evaluasi Aktif</strong>
+              <span style="color: var(--text-muted); font-size: 0.82rem;">— Nilai kuis dan ujian praktikum real-time yang langsung dihitung saat pengerjaan selesai</span>
             </div>
             <table class="lead-table">
               <thead>
@@ -1043,8 +1200,8 @@
                   <th>Waktu</th>
                   <th>Praktikan</th>
                   <th>NIM</th>
-                  <th>Tugas Praktikum</th>
-                  <th>Runtime</th>
+                  <th>Evaluasi (Quiz / Exam)</th>
+                  <th>Durasi Pengerjaan</th>
                   <th>Status</th>
                   <th style="text-align: right;">Skor</th>
                 </tr>
@@ -1084,6 +1241,9 @@
           </button>
           <button class="aslab-tab-btn" data-aslab-tab="assignments" id="tab-aslab-assignments">
             📝 Kelola Tugas (<span id="aslab-count-ass">0</span>)
+          </button>
+          <button class="aslab-tab-btn" data-aslab-tab="quizzes" id="tab-aslab-quizzes">
+            📋 Kelola Quiz &amp; Exam (<span id="aslab-count-quiz">0</span>)
           </button>
           <button class="aslab-tab-btn" data-aslab-tab="articles" id="tab-aslab-articles">
             📖 Kelola Artikel (<span id="aslab-count-art">0</span>)
@@ -1151,7 +1311,38 @@
           </div>
         </div>
 
-        <!-- Section 3: Articles Management -->
+        <!-- Section 3: Quizzes Management -->
+        <div class="aslab-tab-section" id="aslab-section-quizzes" style="display: none;">
+          <div class="aslab-panel">
+            <div class="aslab-panel-header">
+              <h3>Daftar Quiz &amp; Exam Praktikum</h3>
+              <button class="btn-pixel btn-primary-action" id="btn-aslab-add-new-quiz" style="padding: 6px 12px; font-size: 0.7rem;">
+                ➕ Tambah Quiz / Exam Baru
+              </button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="aslab-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">ID</th>
+                    <th>Judul Quiz / Exam</th>
+                    <th>Tipe</th>
+                    <th>Durasi</th>
+                    <th>Jumlah Soal</th>
+                    <th>Poin</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="aslab-quizzes-tbody">
+                  <!-- Populated from GET /quizzes -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Articles Management -->
         <div class="aslab-tab-section" id="aslab-section-articles" style="display: none;">
           <div class="aslab-panel">
             <div class="aslab-panel-header">
@@ -1180,7 +1371,7 @@
           </div>
         </div>
 
-        <!-- Section 4: Audit & Live Scores -->
+        <!-- Section 5: Audit & Live Scores -->
         <div class="aslab-tab-section" id="aslab-section-audit" style="display: none;">
           <div class="aslab-panel">
             <div class="aslab-panel-header">
@@ -1322,12 +1513,9 @@
         <button class="modal-close-btn" id="btn-close-auth-modal">✕</button>
       </div>
 
-      <!-- Auth Tabs: Register vs Login Mahasiswa vs Login Aslab -->
+      <!-- Auth Tabs: Login Mahasiswa vs Login Aslab -->
       <div class="auth-modal-tabs">
-        <button class="auth-tab-btn active" data-auth-tab="register" id="tab-auth-register">
-          👨‍💻 Daftar Baru
-        </button>
-        <button class="auth-tab-btn" data-auth-tab="login" id="tab-auth-login">
+        <button class="auth-tab-btn active" data-auth-tab="login" id="tab-auth-login">
           🔑 Masuk Mahasiswa
         </button>
         <button class="auth-tab-btn" data-auth-tab="aslab" id="tab-auth-aslab">
@@ -1335,49 +1523,8 @@
         </button>
       </div>
 
-      <!-- Tab 1: Daftar Mahasiswa -->
-      <form id="form-auth-register" class="auth-tab-form active">
-        <div class="form-row">
-          <div class="form-group half">
-            <label for="reg-username">Username *</label>
-            <input type="text" id="reg-username" placeholder="misal: akil_if25" required autocomplete="off">
-            <span class="form-hint">Huruf kecil tanpa spasi</span>
-          </div>
-          <div class="form-group half">
-            <label for="reg-nim">NIM Mahasiswa *</label>
-            <input type="text" id="reg-nim" placeholder="misal: 13525099" required autocomplete="off">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="reg-name">Nama Lengkap *</label>
-          <input type="text" id="reg-name" placeholder="Nama Lengkap Mahasiswa" required>
-        </div>
-
-        <div class="form-group">
-          <label for="reg-avatar">Pilih Avatar Emoji</label>
-          <select id="reg-avatar">
-            <option value="👨‍💻">👨‍💻 Programmer</option>
-            <option value="👩‍💻">👩‍💻 Tech Student</option>
-            <option value="🤖">🤖 Cyber Bot</option>
-            <option value="👾">👾 Retro Gamer</option>
-            <option value="🚀">🚀 Astronaut</option>
-            <option value="⚡">⚡ Lightning Coder</option>
-            <option value="👑">👑 Leader</option>
-            <option value="🐱">🐱 Pixel Cat</option>
-          </select>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn-cancel" id="btn-cancel-auth-modal">Batal</button>
-          <button type="submit" class="btn-pixel btn-submit-aslab">
-            💾 Daftarkan Akun Mahasiswa
-          </button>
-        </div>
-      </form>
-
-      <!-- Tab 2: Login Mahasiswa (NIM / Username Pribadi) -->
-      <form id="form-auth-login" class="auth-tab-form" style="display: none;">
+      <!-- Tab 1: Login Mahasiswa (NIM / Username Pribadi) -->
+      <form id="form-auth-login" class="auth-tab-form active">
         <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 14px;">
           Masukkan NIM atau Username terdaftar untuk masuk ke sesi belajar Anda.
         </p>
@@ -1393,7 +1540,7 @@
         </div>
       </form>
 
-      <!-- Tab 3: Login Asisten Lab (Pilihan 3 Akun Aslab) -->
+      <!-- Tab 2: Login Asisten Lab (Pilihan 3 Akun Aslab) -->
       <form id="form-auth-aslab" class="auth-tab-form" style="display: none;">
         <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 14px;">
           Portal khusus 3 Asisten Laboratorium IF'25. Pilih akun Aslab dan masukkan kode PIN verifikasi.
@@ -1401,20 +1548,19 @@
         <div class="form-group">
           <label for="aslab-account-select">Pilih Akun Asisten Lab *</label>
           <select id="aslab-account-select" class="form-input" style="background: var(--bg-inset); color: var(--text-primary); border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-xs); width: 100%;">
-            <option value="aslab_1">👑 Aslab 1: Koordinator Lab IF'25 (ASLAB-01)</option>
-            <option value="aslab_2">⚡ Aslab 2: Kurikulum &amp; Modul IF'25 (ASLAB-02)</option>
-            <option value="aslab_3">🛡️ Aslab 3: Evaluasi &amp; Tugas IF'25 (ASLAB-03)</option>
+            <option value="aslab_1">Aslab 1</option>
+            <option value="aslab_2">Aslab 2</option>
+            <option value="aslab_3">Aslab 3</option>
           </select>
         </div>
         <div class="form-group">
           <label for="aslab-auth-pin">Kode PIN Asisten Lab *</label>
           <input type="password" id="aslab-auth-pin" placeholder="Masukkan PIN Aslab..." required autocomplete="off">
-          <span class="form-hint" style="color: var(--accent-cyan); font-size: 0.72rem; margin-top: 4px; display: block;">Aslab 1: 1928 | Aslab 2: 2525 | Aslab 3: 2025</span>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn-cancel" id="btn-cancel-aslab-auth-modal">Batal</button>
           <button type="submit" class="btn-pixel btn-primary-action">
-            🔓 Verifikasi &amp; Masuk Aslab
+            🔓 Masuk Aslab
           </button>
         </div>
       </form>
@@ -1560,9 +1706,80 @@
     </div>
   </div>
 
+  <!-- ════════════════════ MODAL: TAMBAH / EDIT QUIZ & EXAM (ASLAB) ════════════════════ -->
+  <div class="modal-overlay" id="modal-aslab-quiz">
+    <div class="modal-card modal-card-large">
+      <div class="modal-header">
+        <div>
+          <span class="aslab-badge">MANAJEMEN QUIZ &amp; EXAM</span>
+          <h3 class="modal-heading" id="modal-heading-quiz">Tambah Quiz / Exam Baru</h3>
+        </div>
+        <button class="modal-close-btn" id="btn-close-quiz-modal">✕</button>
+      </div>
+      <form id="form-add-quiz">
+        <input type="hidden" id="aslab-quiz-edit-id" value="">
+        <div class="form-group">
+          <label for="quiz-form-title">Judul Quiz / Exam *</label>
+          <input type="text" id="quiz-form-title" placeholder="Contoh: Quiz 3: Pointer &amp; Alamat Memori" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="quiz-form-type">Tipe Evaluasi *</label>
+            <select id="quiz-form-type">
+              <option value="quiz">🎯 Quiz Praktikum</option>
+              <option value="ujian">⚡ Exam</option>
+            </select>
+          </div>
+          <div class="form-group half">
+            <label for="quiz-form-category">Kategori Modul / Topik *</label>
+            <input type="text" id="quiz-form-category" placeholder="Contoh: Pointer &amp; Array" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="quiz-form-duration">Durasi Waktu Pengerjaan (Menit) *</label>
+            <input type="number" id="quiz-form-duration" value="15" min="1" max="180" required>
+          </div>
+          <div class="form-group half">
+            <label for="quiz-form-schedule">Jadwal / Sesi *</label>
+            <input type="text" id="quiz-form-schedule" placeholder="Contoh: Sesi 2 • Minggu 4" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="quiz-form-points">Total Poin Maksimal</label>
+          <input type="number" id="quiz-form-points" value="100" min="10" max="500">
+        </div>
+        <div class="form-group">
+          <label for="quiz-form-desc">Deskripsi &amp; Petunjuk Singkat *</label>
+          <textarea id="quiz-form-desc" rows="2" placeholder="Jelaskan petunjuk kuis kepada praktikan..." required></textarea>
+        </div>
+
+        <!-- Dynamic Questions Builder Header -->
+        <div class="quiz-builder-section">
+          <div class="builder-header-row">
+            <h4 class="builder-title">📝 Daftar Butir Soal Pilihan Ganda</h4>
+            <button type="button" class="btn-pixel btn-primary-action" id="btn-aslab-add-question" style="padding: 5px 10px; font-size: 0.68rem;">
+              ➕ Tambah Soal
+            </button>
+          </div>
+          <div id="aslab-quiz-questions-builder" class="questions-builder-list">
+            <!-- Dynamic Question Items Rendered Here -->
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" id="btn-cancel-quiz-modal">Batal</button>
+          <button type="submit" class="btn-pixel btn-submit-aslab">
+            💾 Simpan Kuis &amp; Soal ke Database
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Notification Mount -->
   <div id="toast-container"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=3.9"></script>
 </body>
 </html>
