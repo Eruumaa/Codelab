@@ -2004,19 +2004,28 @@ if __name__ == "__main__":
   }
 
   // ─── Code Execution (POST /execute) with Interactive STDIN Support ───
-  async function executeCode(mode = "workspace") {
+  async function executeCode(mode = "pure") {
     if (state.isExecuting) return;
 
-    const editor = mode === "pure" ? state.pureEditor : state.workspaceEditor;
-    const lang = mode === "pure" ? state.pureLanguage : state.currentLanguage;
-    const termBox = document.getElementById(mode === "pure" ? "pure-terminal-content" : "terminal-content-box");
-    const termMetrics = document.getElementById(mode === "pure" ? "pure-term-metrics" : "term-exec-metrics");
-    const btnRun = document.getElementById(mode === "pure" ? "btn-pure-run" : "btn-run-code");
+    const isPure = mode === "pure";
+    const editor = isPure ? state.pureEditor : state.workspaceEditor;
+    const lang = isPure ? state.pureLanguage : state.currentLanguage;
+    const termBox = document.getElementById(isPure ? "pure-terminal-content" : "terminal-content-box");
+    const termMetrics = document.getElementById(isPure ? "pure-term-metrics" : "term-exec-metrics");
+    const btnRun = document.getElementById(isPure ? "btn-pure-run" : "btn-run-code");
 
-    // Gather STDIN input (from quick input field or full textarea)
-    const quickInputEl = document.getElementById(mode === "pure" ? "pure-quick-stdin" : "ws-quick-stdin");
-    const textareaInputEl = document.getElementById(mode === "pure" ? "pure-terminal-stdin" : "ws-terminal-stdin");
-    const stdinVal = (textareaInputEl?.value || quickInputEl?.value || "").trim();
+    // Gather STDIN input reliably: check both the quick-input bar and the full input textarea
+    let stdinVal = "";
+    if (isPure) {
+      const qVal = (document.getElementById("pure-quick-stdin")?.value || "").trim();
+      const tVal = (document.getElementById("pure-terminal-stdin")?.value || "").trim();
+      stdinVal = qVal || tVal || "";
+    } else {
+      const cVal = (document.getElementById("ltx-custom-stdin")?.value || "").trim();
+      const qVal = (document.getElementById("pure-quick-stdin")?.value || "").trim();
+      const tVal = (document.getElementById("pure-terminal-stdin")?.value || "").trim();
+      stdinVal = cVal || qVal || tVal || "";
+    }
 
     // Ensure output tab is active so the user sees results immediately
     switchTerminalTab(mode, "output");
@@ -2041,6 +2050,8 @@ if __name__ == "__main__":
     termAppend(termBox, compileCmd, "cmd-line");
     if (stdinVal) {
       termAppend(termBox, `[STDIN INPUT]: ${stdinVal}`, "info-line");
+    } else if (code.includes("scanf") || code.includes("fgets") || code.includes("getchar") || code.includes("input(")) {
+      termAppend(termBox, `💡 Info: Program menggunakan fungsi input. Jika program membutuhkan masukan, ketik pada kolom STDIN di bawah lalu klik Run.`, "info-line");
     }
 
     const startTime = performance.now();
@@ -3583,7 +3594,7 @@ if __name__ == "__main__":
       }
     });
 
-    // Pure IDE Terminal Tabs
+    // Pure IDE Terminal Tabs & STDIN Sync
     on("tab-pure-term-output", "click", () => switchTerminalTab("pure", "output"));
     on("tab-pure-term-input", "click", () => switchTerminalTab("pure", "input"));
     on("btn-pure-quick-run", "click", () => executeCode("pure"));
@@ -3593,6 +3604,24 @@ if __name__ == "__main__":
         executeCode("pure");
       }
     });
+
+    // 2-Way Sync between Quick STDIN and Full Stdin Textarea
+    const pureQStdin = document.getElementById("pure-quick-stdin");
+    const pureTStdin = document.getElementById("pure-terminal-stdin");
+    if (pureQStdin && pureTStdin) {
+      pureQStdin.addEventListener("input", () => {
+        pureTStdin.value = pureQStdin.value;
+      });
+      pureTStdin.addEventListener("input", () => {
+        pureQStdin.value = pureTStdin.value.replace(/\n/g, " ");
+      });
+      pureTStdin.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+          e.preventDefault();
+          executeCode("pure");
+        }
+      });
+    }
 
     // ─── HackerRank / LTX Testcase & Console Event Listeners ───
     on("btn-ltx-tab-0", "click", () => switchLtxTab("0"));

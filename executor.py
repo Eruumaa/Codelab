@@ -22,10 +22,14 @@ def get_client():
         return None
 
 def run_with_docker(client, language, temp_dir, stdin_input=""):
+    clean_stdin = (stdin_input or "").strip()
+    if clean_stdin and not clean_stdin.endswith("\n"):
+        clean_stdin += "\n"
+
     # Write input.txt in temp_dir for redirection
     input_file = os.path.join(temp_dir, "input.txt")
     with open(input_file, "w", encoding="utf-8") as f:
-        f.write(stdin_input or "")
+        f.write(clean_stdin)
 
     if language == "c":
         command = "sh -c 'gcc main.c -o main && ./main < input.txt'"
@@ -57,6 +61,10 @@ def run_with_docker(client, language, temp_dir, stdin_input=""):
         return {"status": "error", "output": str(e)}
 
 def run_with_local_subprocess(language, temp_dir, stdin_input=""):
+    clean_stdin = (stdin_input or "").strip()
+    if clean_stdin and not clean_stdin.endswith("\n"):
+        clean_stdin += "\n"
+
     try:
         if language == "c":
             src = os.path.join(temp_dir, "main.c")
@@ -72,10 +80,10 @@ def run_with_local_subprocess(language, temp_dir, stdin_input=""):
             if compile_res.returncode != 0:
                 return {"status": "error", "output": compile_res.stderr or compile_res.stdout}
             
-            # 2. Run with stdin input
+            # 2. Run with clean_stdin
             run_res = subprocess.run(
                 [exe],
-                input=stdin_input or "",
+                input=clean_stdin,
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -87,7 +95,7 @@ def run_with_local_subprocess(language, temp_dir, stdin_input=""):
             src = os.path.join(temp_dir, "main.py")
             run_res = subprocess.run(
                 ["python", src],
-                input=stdin_input or "",
+                input=clean_stdin,
                 capture_output=True,
                 text=True,
                 timeout=5,
