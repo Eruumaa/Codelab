@@ -1628,7 +1628,30 @@ if __name__ == "__main__":
     }
   }
 
-  // ─── Code Execution (POST /execute) ───
+  // ─── Terminal Tab Switcher (Output vs Stdin) ───
+  function switchTerminalTab(mode, targetTab) {
+    const isPure = mode === "pure";
+    const outputBtn = document.getElementById(isPure ? "tab-pure-term-output" : "tab-ws-term-output");
+    const inputBtn = document.getElementById(isPure ? "tab-pure-term-input" : "tab-ws-term-input");
+    const outputBody = document.getElementById(isPure ? "pure-terminal-content" : "terminal-content-box");
+    const inputPane = document.getElementById(isPure ? "pure-terminal-stdin-pane" : "ws-terminal-stdin-pane");
+
+    if (targetTab === "output") {
+      outputBtn?.classList.add("active");
+      inputBtn?.classList.remove("active");
+      if (outputBody) outputBody.style.display = "block";
+      if (inputPane) inputPane.style.display = "none";
+    } else {
+      inputBtn?.classList.add("active");
+      outputBtn?.classList.remove("active");
+      if (outputBody) outputBody.style.display = "none";
+      if (inputPane) inputPane.style.display = "flex";
+      const textarea = document.getElementById(isPure ? "pure-terminal-stdin" : "ws-terminal-stdin");
+      if (textarea) textarea.focus();
+    }
+  }
+
+  // ─── Code Execution (POST /execute) with Interactive STDIN Support ───
   async function executeCode(mode = "workspace") {
     if (state.isExecuting) return;
 
@@ -1637,6 +1660,14 @@ if __name__ == "__main__":
     const termBox = document.getElementById(mode === "pure" ? "pure-terminal-content" : "terminal-content-box");
     const termMetrics = document.getElementById(mode === "pure" ? "pure-term-metrics" : "term-exec-metrics");
     const btnRun = document.getElementById(mode === "pure" ? "btn-pure-run" : "btn-run-code");
+
+    // Gather STDIN input (from quick input field or full textarea)
+    const quickInputEl = document.getElementById(mode === "pure" ? "pure-quick-stdin" : "ws-quick-stdin");
+    const textareaInputEl = document.getElementById(mode === "pure" ? "pure-terminal-stdin" : "ws-terminal-stdin");
+    const stdinVal = (textareaInputEl?.value || quickInputEl?.value || "").trim();
+
+    // Ensure output tab is active so the user sees results immediately
+    switchTerminalTab(mode, "output");
 
     if (!editor) return;
     const code = editor.getValue().trim();
@@ -1654,7 +1685,11 @@ if __name__ == "__main__":
     if (termMetrics) termMetrics.textContent = "running...";
 
     termClear(termBox, termMetrics);
-    termAppend(termBox, `$ gcc -Wall -Wextra main.c -o main && ./main`, "cmd-line");
+    const compileCmd = lang === "c" ? "$ gcc -Wall -Wextra main.c -o main && ./main" : "$ python3 main.py";
+    termAppend(termBox, compileCmd, "cmd-line");
+    if (stdinVal) {
+      termAppend(termBox, `[STDIN INPUT]: ${stdinVal}`, "info-line");
+    }
 
     const startTime = performance.now();
 
@@ -1665,7 +1700,8 @@ if __name__ == "__main__":
         body: JSON.stringify({
           language: lang,
           code: code,
-          username: state.currentUser?.username || "tamu"
+          username: state.currentUser?.username || "tamu",
+          stdin: stdinVal
         })
       });
 
@@ -3192,6 +3228,30 @@ if __name__ == "__main__":
       if (el) {
         navigator.clipboard.writeText(el.innerText);
         showToast("Output terminal disalin ke clipboard", "success");
+      }
+    });
+
+    // Terminal Tab Buttons (Output vs Stdin)
+    on("tab-pure-term-output", "click", () => switchTerminalTab("pure", "output"));
+    on("tab-pure-term-input", "click", () => switchTerminalTab("pure", "input"));
+    on("tab-ws-term-output", "click", () => switchTerminalTab("workspace", "output"));
+    on("tab-ws-term-input", "click", () => switchTerminalTab("workspace", "input"));
+
+    // Quick STDIN Run Buttons
+    on("btn-pure-quick-run", "click", () => executeCode("pure"));
+    on("btn-ws-quick-run", "click", () => executeCode("workspace"));
+
+    // Quick STDIN Enter Key
+    on("pure-quick-stdin", "keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        executeCode("pure");
+      }
+    });
+    on("ws-quick-stdin", "keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        executeCode("workspace");
       }
     });
 

@@ -22,7 +22,7 @@
   <script src="vendor/codemirror/addon/edit/matchbrackets.min.js"></script>
   <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
 
-  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="style.css?v=4.1">
 </head>
 <body class="theme-cyber">
 
@@ -837,7 +837,10 @@
             <div class="pure-terminal-pane">
               <div class="terminal-bar">
                 <div class="terminal-left-info">
-                  <span class="terminal-title-text">TERMINAL OUTPUT</span>
+                  <div class="term-tab-btns">
+                    <button class="term-tab-btn active" data-term-target="pure-output" id="tab-pure-term-output">💻 Output</button>
+                    <button class="term-tab-btn" data-term-target="pure-input" id="tab-pure-term-input">📥 Input (stdin)</button>
+                  </div>
                   <span class="terminal-sub-info" id="pure-term-metrics">ready</span>
                 </div>
                 <div class="terminal-actions">
@@ -847,6 +850,15 @@
               </div>
               <div class="terminal-body" id="pure-terminal-content">
                 <p class="term-line info-line">Codelab IDE Siap. Tulis kode program Anda secara bebas dan klik RUN.</p>
+              </div>
+              <div class="terminal-stdin-body" id="pure-terminal-stdin-pane" style="display: none;">
+                <div class="stdin-hint">💡 Masukkan input program untuk <code>scanf()</code> atau <code>input()</code> di bawah ini:</div>
+                <textarea id="pure-terminal-stdin" class="terminal-stdin-textarea" placeholder="Contoh input data (dipisahkan spasi atau baris baru):&#10;10 25&#10;Atau teks baris per baris..."></textarea>
+              </div>
+              <div class="terminal-quick-input-bar">
+                <span class="quick-input-tag">⌨️ STDIN:</span>
+                <input type="text" id="pure-quick-stdin" class="terminal-quick-input" placeholder="Ketik input untuk scanf()... Tekan Enter atau klik Run">
+                <button type="button" id="btn-pure-quick-run" class="btn-quick-run-stdin">↵ Run</button>
               </div>
             </div>
           </div>
@@ -963,7 +975,10 @@
           <div id="terminal-pane">
             <div class="terminal-bar">
               <div class="terminal-left-info">
-                <span class="terminal-title-text">TERMINAL OUTPUT</span>
+                <div class="term-tab-btns">
+                  <button class="term-tab-btn active" data-term-target="ws-output" id="tab-ws-term-output">💻 Output</button>
+                  <button class="term-tab-btn" data-term-target="ws-input" id="tab-ws-term-input">📥 Input (stdin)</button>
+                </div>
                 <span class="terminal-sub-info" id="term-exec-metrics">ready</span>
               </div>
               <div class="terminal-actions">
@@ -973,6 +988,15 @@
             </div>
             <div class="terminal-body" id="terminal-content-box">
               <p class="term-line info-line">Codelab Siap. Tulis kode program Anda dan klik RUN untuk mengompilasi.</p>
+            </div>
+            <div class="terminal-stdin-body" id="ws-terminal-stdin-pane" style="display: none;">
+              <div class="stdin-hint">💡 Masukkan input program untuk <code>scanf()</code> atau <code>input()</code> di bawah ini:</div>
+              <textarea id="ws-terminal-stdin" class="terminal-stdin-textarea" placeholder="Contoh input data (dipisahkan spasi atau baris baru):&#10;10 25&#10;Atau teks baris per baris..."></textarea>
+            </div>
+            <div class="terminal-quick-input-bar">
+              <span class="quick-input-tag">⌨️ STDIN:</span>
+              <input type="text" id="ws-quick-stdin" class="terminal-quick-input" placeholder="Ketik input untuk scanf()... Tekan Enter atau klik Run">
+              <button type="button" id="btn-ws-quick-run" class="btn-quick-run-stdin">↵ Run</button>
             </div>
           </div>
         </div>
@@ -1780,6 +1804,6 @@
   <!-- Toast Notification Mount -->
   <div id="toast-container"></div>
 
-  <script src="app.js?v=4.0"></script>
+  <script src="app.js?v=4.1"></script>
 </body>
 </html>

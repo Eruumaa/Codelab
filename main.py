@@ -487,6 +487,7 @@ class CodeSubmission(BaseModel):
     language: str
     code: str
     username: Optional[str] = "akil"
+    stdin: Optional[str] = ""
 
 class Material(BaseModel):
     title: str
@@ -600,7 +601,7 @@ def execute_code(submission: CodeSubmission):
     if submission.language not in ["c", "python"]:
         raise HTTPException(status_code=400, detail="Hanya mendukung bahasa C dan Python")
     
-    result = run_code_safely(submission.language, submission.code)
+    result = run_code_safely(submission.language, submission.code, submission.stdin or "")
     
     # Log submission to SQLite database
     try:

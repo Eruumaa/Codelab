@@ -2971,6 +2971,137 @@ body {
   color: var(--accent-green);
 }
 
+/* Terminal Tabs (Output vs Stdin Input) */
+.term-tab-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.term-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-family: var(--font-pixel);
+  font-size: 0.6rem;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.term-tab-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.term-tab-btn.active {
+  color: var(--accent-cyan);
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+/* Stdin Full Textarea Pane */
+.terminal-stdin-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  background: rgba(10, 15, 29, 0.95);
+}
+
+.stdin-hint {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.stdin-hint code {
+  color: var(--accent-cyan);
+}
+
+.terminal-stdin-textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 80px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: #38bdf8;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  padding: 10px;
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.terminal-stdin-textarea:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+/* Terminal Quick Input Bar at bottom of terminal */
+.terminal-quick-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(15, 23, 42, 0.95);
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.quick-input-tag {
+  font-family: var(--font-pixel);
+  font-size: 0.58rem;
+  color: var(--accent-cyan);
+  white-space: nowrap;
+}
+
+.terminal-quick-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--border-subtle);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  padding: 5px 10px;
+  border-radius: var(--radius-xs);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.terminal-quick-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+}
+
+.btn-quick-run-stdin {
+  background: var(--accent-cyan);
+  color: #030712;
+  border: none;
+  font-family: var(--font-pixel);
+  font-size: 0.65rem;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: transform 0.1s, filter 0.2s;
+}
+
+.btn-quick-run-stdin:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.btn-quick-run-stdin:active {
+  transform: translateY(0);
+}
+
 /* ════════════════════ PAGE 6: PURE IDE WITH NOTES / SCRATCHPAD ════════════════════ */
 .pure-ide-wrapper {
   display: flex;
