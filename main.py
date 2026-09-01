@@ -148,7 +148,17 @@ def init_db():
                   deadline TEXT,
                   points INTEGER,
                   description TEXT,
-                  task_prompt TEXT)''')
+                  task_prompt TEXT,
+                  sample_input TEXT DEFAULT '',
+                  sample_output TEXT DEFAULT '',
+                  sample_input_2 TEXT DEFAULT '',
+                  sample_output_2 TEXT DEFAULT '',
+                  explanation TEXT DEFAULT '')''')
+    for col in ['sample_input', 'sample_output', 'sample_input_2', 'sample_output_2', 'explanation']:
+        try:
+            c.execute(f"ALTER TABLE assignments ADD COLUMN {col} TEXT DEFAULT ''")
+        except:
+            pass
 
     # 5. Tabel Articles (Artikel Teori & Referensi Kurikulum)
     c.execute('''CREATE TABLE IF NOT EXISTS articles
@@ -515,6 +525,11 @@ class AssignmentCreate(BaseModel):
     points: Optional[int] = 100
     description: str
     task_prompt: Optional[str] = ""
+    sample_input: Optional[str] = ""
+    sample_output: Optional[str] = ""
+    sample_input_2: Optional[str] = ""
+    sample_output_2: Optional[str] = ""
+    explanation: Optional[str] = ""
 
 class AssignmentUpdate(BaseModel):
     module_id: Optional[int] = None
@@ -524,6 +539,11 @@ class AssignmentUpdate(BaseModel):
     points: Optional[int] = None
     description: Optional[str] = None
     task_prompt: Optional[str] = None
+    sample_input: Optional[str] = None
+    sample_output: Optional[str] = None
+    sample_input_2: Optional[str] = None
+    sample_output_2: Optional[str] = None
+    explanation: Optional[str] = None
 
 class ArticleCreate(BaseModel):
     module_id: Optional[int] = 1
@@ -566,6 +586,7 @@ class LiveScoreSubmit(BaseModel):
     assignment_id: int
     code: str
     language: Optional[str] = "c"
+    stdin: Optional[str] = ""
 
 class QuizCreate(BaseModel):
     title: str
@@ -691,9 +712,9 @@ def get_assignments():
 def add_assignment(ass: AssignmentCreate):
     conn = sqlite3.connect('app.db')
     c = conn.cursor()
-    c.execute("""INSERT INTO assignments (module_id, title, category, deadline, points, description, task_prompt)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)""",
-              (ass.module_id, ass.title, ass.category, ass.deadline, ass.points, ass.description, ass.task_prompt))
+    c.execute("""INSERT INTO assignments (module_id, title, category, deadline, points, description, task_prompt, sample_input, sample_output, sample_input_2, sample_output_2, explanation)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+              (ass.module_id, ass.title, ass.category, ass.deadline, ass.points, ass.description, ass.task_prompt, ass.sample_input or "", ass.sample_output or "", ass.sample_input_2 or "", ass.sample_output_2 or "", ass.explanation or ""))
     conn.commit()
     new_id = c.lastrowid
     conn.close()
@@ -717,9 +738,14 @@ def update_assignment(assignment_id: int, data: AssignmentUpdate):
     points = data.points if data.points is not None else curr["points"]
     desc = data.description if data.description is not None else curr["description"]
     prompt = data.task_prompt if data.task_prompt is not None else curr["task_prompt"]
+    s_in = data.sample_input if data.sample_input is not None else curr.get("sample_input", "")
+    s_out = data.sample_output if data.sample_output is not None else curr.get("sample_output", "")
+    s_in2 = data.sample_input_2 if data.sample_input_2 is not None else curr.get("sample_input_2", "")
+    s_out2 = data.sample_output_2 if data.sample_output_2 is not None else curr.get("sample_output_2", "")
+    expl = data.explanation if data.explanation is not None else curr.get("explanation", "")
     
-    c.execute("""UPDATE assignments SET title=?, category=?, deadline=?, points=?, description=?, task_prompt=?
-                 WHERE id=?""", (title, category, deadline, points, desc, prompt, assignment_id))
+    c.execute("""UPDATE assignments SET title=?, category=?, deadline=?, points=?, description=?, task_prompt=?, sample_input=?, sample_output=?, sample_input_2=?, sample_output_2=?, explanation=?
+                 WHERE id=?""", (title, category, deadline, points, desc, prompt, s_in, s_out, s_in2, s_out2, expl, assignment_id))
     conn.commit()
     conn.close()
     return {"status": "success", "message": f"Tugas #{assignment_id} berhasil diperbarui"}
@@ -1056,16 +1082,9 @@ def get_livescore():
 
 @app.post("/livescore/submit")
 def submit_livescore(sub: LiveScoreSubmit):
-    result = run_code_safely(sub.language or "c", sub.code)
     conn = sqlite3.connect('app.db')
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    
-    # Lookup user
-    c.execute("SELECT * FROM users WHERE username = ?", (sub.username,))
-    user_row = c.fetchone()
-    student_name = user_row["name"] if user_row else sub.username
-    nim = user_row["nim"] if user_row else "-"
     
     # Lookup assignment
     c.execute("SELECT * FROM assignments WHERE id = ?", (sub.assignment_id,))
@@ -1073,9 +1092,43 @@ def submit_livescore(sub: LiveScoreSubmit):
     ass_title = ass_row["title"] if ass_row else f"Tugas #{sub.assignment_id}"
     max_points = ass_row["points"] if ass_row else 100
     
+    # Run code with assignment's sample_input (or custom sub.stdin)
+    test_stdin = sub.stdin if sub.stdin else (ass_row["sample_input"] if (ass_row and ass_row["sample_input"]) else "")
+    result = run_code_safely(sub.language or "c", sub.code, test_stdin)
+    
+    # Lookup user
+    c.execute("SELECT * FROM users WHERE username = ?", (sub.username,))
+    user_row = c.fetchone()
+    student_name = user_row["name"] if user_row else sub.username
+    nim = user_row["nim"] if user_row else "-"
+    
     is_success = result.get("status") == "success"
-    score = max_points if is_success else 30
-    status_label = "PASSED" if is_success else "FAILED"
+    user_output = (result.get("output") or "").strip()
+    expected_output = (ass_row["sample_output"] if ass_row else "").strip()
+    
+    # Check if output matches expected (or non-empty successful run if no expected output)
+    is_match = False
+    if is_success:
+        if expected_output:
+            clean_user = "\n".join([line.strip() for line in user_output.splitlines() if line.strip()])
+            clean_exp = "\n".join([line.strip() for line in expected_output.splitlines() if line.strip()])
+            is_match = (clean_user == clean_exp) or (clean_exp in clean_user) or (clean_user in clean_exp)
+        else:
+            is_match = True
+            
+    if is_success and is_match:
+        score = max_points
+        status_label = "PASSED"
+        msg = f"Selamat! Program Anda berhasil lolos semua test case. Skor: +{score} Poin"
+    elif is_success and not is_match:
+        score = max(40, max_points // 2)
+        status_label = "WRONG ANSWER"
+        msg = f"Program dapat berjalan namun output belum sesuai dengan Expected Output. Skor parsial: +{score} Poin"
+    else:
+        score = 0
+        status_label = "COMPILATION ERROR"
+        msg = "Program mengalami kesalahan kompilasi / runtime error. Silakan periksa pesan error di terminal."
+
     exec_time = f"{result.get('exec_time_ms', 15)}ms"
     now_str = datetime.now().strftime("%H:%M:%S")
     
@@ -1089,8 +1142,8 @@ def submit_livescore(sub: LiveScoreSubmit):
                  VALUES (?, ?, ?, ?, ?, ?)""",
               (sub.username, sub.language or "c", sub.code, result.get("output", ""), result.get("status", "error"), timestamp_full))
     
-    # If user found and test passed, award XP
-    if user_row and is_success:
+    # If user found and score > 0, award XP
+    if user_row and score > 0:
         new_xp = user_row["xp"] + score
         new_lvl = max(1, (new_xp // 150) + 1)
         c.execute("UPDATE users SET xp = ?, level = ? WHERE username = ?", (new_xp, new_lvl, sub.username))
@@ -1102,8 +1155,11 @@ def submit_livescore(sub: LiveScoreSubmit):
         "result": result,
         "score": score,
         "verdict": status_label,
+        "is_passed": (status_label == "PASSED"),
+        "user_output": user_output,
+        "expected_output": expected_output,
         "assignment_title": ass_title,
-        "message": f"Tugas berhasil dievaluasi! Skor Anda: {score}/{max_points} Poin" if is_success else "Program gagal dieksekusi dengan sempurna. Periksa kembali error compiler!"
+        "message": msg
     }
 
 # ─── USERS & AUTHENTICATION ───

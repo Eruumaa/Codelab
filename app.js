@@ -799,7 +799,7 @@ print("Hello from Python IDE!")`
     }
   }
 
-  // ─── Assignment Page Renderer ───
+  // ─── Assignment Page Renderer (HackerRank / LTX Workspace) ───
   function renderAssignments() {
     const grid = document.getElementById("assignment-cards-grid");
     if (!grid) return;
@@ -821,6 +821,11 @@ print("Hello from Python IDE!")`
           </div>
           <h3 class="assignment-title">${ass.title}</h3>
           <p class="assignment-desc">${ass.description}</p>
+          ${ass.sample_input || ass.sample_output ? `
+            <div style="margin-top: 8px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">
+              <span>📥 Contoh Input: <code style="color: var(--accent-cyan);">${ass.sample_input || '(void)'}</code></span>
+            </div>
+          ` : ''}
         </div>
         <div class="assignment-card-footer">
           <div class="assignment-deadline-pill" title="Jadwal Praktikum: ${ass.deadline || 'Sesi Praktikum'}">
@@ -828,37 +833,94 @@ print("Hello from Python IDE!")`
             <span class="deadline-text">${ass.deadline || 'Sesi Praktikum'}</span>
           </div>
           <button class="btn-pixel btn-primary-action btn-start-assignment" data-id="${ass.id}">
-            💻 Kerjakan di IDE
+            💻 Kerjakan Soal
           </button>
         </div>
       `;
 
       card.querySelector(".btn-start-assignment").addEventListener("click", () => {
-        state.activeTaskToSubmit = ass;
-        const promptComment = `/* ═════════════════════════════════════════════════════════════════
+        openAssignmentInWorkspace(ass);
+      });
+
+      grid.appendChild(card);
+    });
+  }
+
+  function openAssignmentInWorkspace(ass) {
+    state.activeTaskToSubmit = ass;
+    state.activeAssignment = ass;
+
+    // Switch to Workspace
+    switchPage("workspace");
+
+    // Update Left Panel Problem Statement (HackerRank / LTX Style)
+    document.getElementById("mat-display-title").textContent = ass.title;
+    document.getElementById("mat-display-lang").textContent = "Bahasa C (GCC)";
+    document.getElementById("crumb-module-title").textContent = ass.title;
+    document.getElementById("workspace-step-counter").textContent = `Tugas #${ass.id}`;
+
+    let bodyHtml = `
+      <div class="assignment-task-intro">
+        <div class="instruction-callout" style="margin-top: 0;">
+          <div class="callout-header">
+            <span>🎯</span>
+            <h4>Deskripsi Soal &amp; Petunjuk</h4>
+          </div>
+          <p style="font-size: 0.88rem; line-height: 1.6; color: var(--text-primary);">${ass.description}</p>
+          ${ass.task_prompt ? `<div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent-cyan);">${ass.task_prompt}</div>` : ''}
+        </div>
+      </div>
+    `;
+
+    if (ass.sample_input || ass.sample_output) {
+      bodyHtml += `
+        <div class="instruction-callout">
+          <div class="callout-header">
+            <span>📑</span>
+            <h4>Contoh Kasus Uji (Sample Testcases)</h4>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+            <div style="background: rgba(0,0,0,0.4); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+              <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">Contoh Input 1:</span>
+              <pre style="margin: 4px 0 0 0; font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent-cyan);">${ass.sample_input || '(Tanpa input / void)'}</pre>
+            </div>
+            <div style="background: rgba(0,0,0,0.4); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+              <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">Expected Output 1:</span>
+              <pre style="margin: 4px 0 0 0; font-family: var(--font-mono); font-size: 0.8rem; color: #10b981;">${ass.sample_output || ''}</pre>
+            </div>
+          </div>
+          ${ass.explanation ? `<p style="margin-top: 8px; font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-muted);">💡 <strong>Penjelasan:</strong> ${ass.explanation}</p>` : ''}
+        </div>
+      `;
+    }
+
+    document.getElementById("mat-display-body").innerHTML = bodyHtml;
+
+    // Populate LTX Testcase console
+    populateLtxTestcases(ass);
+
+    // Populate Editor
+    const skeleton = `/* ═════════════════════════════════════════════════════════════════
    ${ass.title}
-   Kategori : ${ass.category}
-   Petunjuk : ${ass.task_prompt || ass.description}
+   Kategori : ${ass.category || 'Tugas Praktikum'}
+   Deadline : ${ass.deadline || 'Sesi Praktikum'}
    ═════════════════════════════════════════════════════════════════ */
 
 #include <stdio.h>
 
 int main() {
-    // Tulis kode penyelesaian tugas Anda di sini
+    // Tulis solusi program Anda di sini
     
     return 0;
 }
 `;
-        state.pureCode.c = promptComment;
-        if (state.pureEditor) {
-          state.pureEditor.setValue(promptComment);
-        }
-        switchPage("ide");
-        showToast(`Tugas "${ass.title}" dimuat ke IDE! Klik "🚀 Submit Tugas" jika sudah selesai.`, "info");
-      });
+    state.workspaceCode.c = skeleton;
+    if (state.workspaceEditor) {
+      state.workspaceEditor.setValue(skeleton);
+    }
+    switchWorkspaceLanguage("c", false);
 
-      grid.appendChild(card);
-    });
+    showToast(`Soal "${ass.title}" siap dikerjakan! Klik "▶ Run Code" untuk uji coba dan "🚀 Submit Code" jika selesai.`, "info");
   }
 
   // ─── Quiz & Exam System Controller ───
@@ -1345,7 +1407,290 @@ int main() {
     }
   }
 
-  // ─── Workspace Controller (Guided Exercise) ───
+  // ─── Workspace Controller (HackerRank / LTX Guided Exercise) ───
+  let activeLtxTab = "0";
+
+  function populateLtxTestcases(item) {
+    const sIn0 = item?.sample_input !== undefined ? item.sample_input : "15 25";
+    const sOut0 = item?.sample_output !== undefined ? item.sample_output : "Hasil: 40";
+    const sIn1 = item?.sample_input_2 !== undefined ? item.sample_input_2 : "100 8";
+    const sOut1 = item?.sample_output_2 !== undefined ? item.sample_output_2 : "Hasil: 108";
+
+    const in0El = document.getElementById("ltx-sample-input-0");
+    const out0El = document.getElementById("ltx-expected-output-0");
+    const in1El = document.getElementById("ltx-sample-input-1");
+    const out1El = document.getElementById("ltx-expected-output-1");
+
+    if (in0El) in0El.textContent = sIn0 ? sIn0 : "(Tanpa input / void)";
+    if (out0El) out0El.textContent = sOut0 ? sOut0 : "(Program selesai tanpa output)";
+    if (in1El) in1El.textContent = sIn1 ? sIn1 : "(Tanpa input / void)";
+    if (out1El) out1El.textContent = sOut1 ? sOut1 : "(Program selesai tanpa output)";
+
+    // Reset status pill and tab
+    switchLtxTab("0");
+    const statusPill = document.getElementById("ltx-status-badge");
+    if (statusPill) {
+      statusPill.className = "ltx-status-pill ready";
+      statusPill.textContent = "Ready to Test";
+    }
+    const verdictBanner = document.getElementById("ltx-verdict-banner");
+    if (verdictBanner) verdictBanner.style.display = "none";
+  }
+
+  function switchLtxTab(tabKey) {
+    activeLtxTab = tabKey;
+    document.querySelectorAll(".ltx-testcase-tabs .ltx-tab-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.ltxTab === tabKey);
+    });
+
+    const pane0 = document.getElementById("ltx-pane-0");
+    const pane1 = document.getElementById("ltx-pane-1");
+    const paneCustom = document.getElementById("ltx-pane-custom");
+    const paneOutput = document.getElementById("ltx-pane-output");
+
+    if (pane0) pane0.style.display = tabKey === "0" ? "flex" : "none";
+    if (pane1) pane1.style.display = tabKey === "1" ? "flex" : "none";
+    if (paneCustom) {
+      paneCustom.style.display = tabKey === "custom" ? "flex" : "none";
+      if (tabKey === "custom") document.getElementById("ltx-custom-stdin")?.focus();
+    }
+    if (paneOutput) paneOutput.style.display = tabKey === "output" ? "flex" : "none";
+  }
+
+  // ─── HackerRank / LTX: Run Code (Check errors without submission) ───
+  async function runLtxCode() {
+    if (state.isExecuting) return;
+    const editor = state.workspaceEditor;
+    if (!editor) return;
+    const code = editor.getValue().trim();
+    if (!code) {
+      showToast("Tulis kode sebelum menjalankan!", "error");
+      return;
+    }
+
+    // Determine which stdin to test
+    let testStdin = "";
+    let expectedOutput = "";
+    const in0 = document.getElementById("ltx-sample-input-0")?.textContent || "";
+    const out0 = document.getElementById("ltx-expected-output-0")?.textContent || "";
+    const in1 = document.getElementById("ltx-sample-input-1")?.textContent || "";
+    const out1 = document.getElementById("ltx-expected-output-1")?.textContent || "";
+    const customStdin = document.getElementById("ltx-custom-stdin")?.value || "";
+
+    if (activeLtxTab === "0") {
+      testStdin = in0.includes("(Tanpa input") ? "" : in0;
+      expectedOutput = out0.includes("(Program selesai") ? "" : out0;
+    } else if (activeLtxTab === "1") {
+      testStdin = in1.includes("(Tanpa input") ? "" : in1;
+      expectedOutput = out1.includes("(Program selesai") ? "" : out1;
+    } else if (activeLtxTab === "custom") {
+      testStdin = customStdin;
+      expectedOutput = "";
+    } else {
+      testStdin = in0.includes("(Tanpa input") ? "" : in0;
+      expectedOutput = out0.includes("(Program selesai") ? "" : out0;
+    }
+
+    state.isExecuting = true;
+    const btnRun = document.getElementById("btn-run-code");
+    const statusPill = document.getElementById("ltx-status-badge");
+    if (btnRun) btnRun.disabled = true;
+    if (statusPill) {
+      statusPill.className = "ltx-status-pill running";
+      statusPill.textContent = "Compiling & Running...";
+    }
+
+    // Switch to output tab
+    switchLtxTab("output");
+    const termBox = document.getElementById("ltx-terminal-output-box");
+    if (termBox) {
+      termBox.innerHTML = "";
+      const lang = state.currentLanguage || "c";
+      const cmd = lang === "c" ? "$ gcc -Wall -Wextra main.c -o main && ./main" : "$ python3 main.py";
+      termAppend(termBox, cmd, "cmd-line");
+      if (testStdin) {
+        termAppend(termBox, `[STDIN INPUT]: ${testStdin}`, "info-line");
+      }
+    }
+
+    const startTime = performance.now();
+
+    try {
+      const response = await fetch(CONFIG.ENDPOINTS.EXECUTE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          language: state.currentLanguage || "c",
+          code: code,
+          username: state.currentUser?.username || "tamu",
+          stdin: testStdin
+        })
+      });
+
+      const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+      const result = await response.json();
+      const rawOutput = (result.output || "").trim();
+      const status = result.status;
+      const verdictBanner = document.getElementById("ltx-verdict-banner");
+      const verdictIcon = document.getElementById("ltx-verdict-icon");
+      const verdictTitle = document.getElementById("ltx-verdict-title");
+      const verdictDesc = document.getElementById("ltx-verdict-desc");
+
+      if (status === "success") {
+        parseTerminalOutput(termBox, rawOutput, true);
+        
+        let isPassed = true;
+        if (expectedOutput) {
+          const cleanUser = rawOutput.split("\n").map(l => l.trim()).filter(Boolean).join("\n");
+          const cleanExp = expectedOutput.split("\n").map(l => l.trim()).filter(Boolean).join("\n");
+          isPassed = (cleanUser === cleanExp) || cleanExp.includes(cleanUser) || cleanUser.includes(cleanExp);
+        }
+
+        if (verdictBanner) {
+          verdictBanner.style.display = "flex";
+          if (isPassed) {
+            verdictBanner.className = "ltx-verdict-banner passed";
+            if (verdictIcon) verdictIcon.textContent = "✅";
+            if (verdictTitle) verdictTitle.textContent = "TESTCASE PASSED";
+            if (verdictDesc) verdictDesc.textContent = `Output program sesuai dengan hasil yang diharapkan (${duration}s).`;
+            if (statusPill) {
+              statusPill.className = "ltx-status-pill passed";
+              statusPill.textContent = "Passed ✅";
+            }
+            showToast("Testcase Lolos! Klik 'Submit Code' untuk mengumpulkan.", "success");
+          } else {
+            verdictBanner.className = "ltx-verdict-banner wrong";
+            if (verdictIcon) verdictIcon.textContent = "❌";
+            if (verdictTitle) verdictTitle.textContent = "WRONG ANSWER";
+            if (verdictDesc) verdictDesc.textContent = `Output program berbeda dari output yang diharapkan. Silakan periksa kembali logika program Anda.`;
+            if (statusPill) {
+              statusPill.className = "ltx-status-pill wrong";
+              statusPill.textContent = "Wrong Answer ❌";
+            }
+            showToast("Output belum sesuai. Periksa hasil eksekusi!", "warning");
+          }
+        }
+      } else {
+        parseTerminalOutput(termBox, rawOutput, false);
+        if (verdictBanner) {
+          verdictBanner.style.display = "flex";
+          verdictBanner.className = "ltx-verdict-banner error";
+          if (verdictIcon) verdictIcon.textContent = "⚠️";
+          if (verdictTitle) verdictTitle.textContent = "COMPILATION ERROR";
+          if (verdictDesc) verdictDesc.textContent = "Program mengalami kesalahan sintaks atau kompilasi.";
+        }
+        if (statusPill) {
+          statusPill.className = "ltx-status-pill wrong";
+          statusPill.textContent = "Error ⚠️";
+        }
+        showToast("Terdapat kesalahan kompilasi pada kode!", "error");
+      }
+    } catch (err) {
+      console.error("Execute error:", err);
+      termAppend(termBox, `[ERROR] Gagal menghubungi server: ${err.message}`, "stderr-line");
+    } finally {
+      state.isExecuting = false;
+      if (btnRun) btnRun.disabled = false;
+    }
+  }
+
+  // ─── HackerRank / LTX: Submit Code (Evaluate and Award Points) ───
+  async function submitLtxTask() {
+    if (state.isExecuting) return;
+    const editor = state.workspaceEditor;
+    if (!editor) return;
+    const code = editor.getValue().trim();
+    if (!code) {
+      showToast("Tulis kode sebelum submit!", "error");
+      return;
+    }
+
+    const currentAssId = state.activeTaskToSubmit?.id || (state.activeMaterialIndex + 1);
+    
+    state.isExecuting = true;
+    const btnSubmit = document.getElementById("btn-submit-task-code");
+    const statusPill = document.getElementById("ltx-status-badge");
+    if (btnSubmit) btnSubmit.disabled = true;
+    if (statusPill) {
+      statusPill.className = "ltx-status-pill running";
+      statusPill.textContent = "Evaluating All Testcases...";
+    }
+
+    // Switch to output tab
+    switchLtxTab("output");
+    const termBox = document.getElementById("ltx-terminal-output-box");
+    if (termBox) {
+      termBox.innerHTML = "";
+      termAppend(termBox, `$ Evaluating submission for Task #${currentAssId}...`, "cmd-line");
+    }
+
+    try {
+      const response = await fetch(CONFIG.ENDPOINTS.LIVESCORE_SUBMIT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: state.currentUser?.username || "tamu",
+          assignment_id: currentAssId,
+          code: code,
+          language: state.currentLanguage || "c",
+          stdin: document.getElementById("ltx-custom-stdin")?.value || ""
+        })
+      });
+
+      const res = await response.json();
+      const verdictBanner = document.getElementById("ltx-verdict-banner");
+      const verdictIcon = document.getElementById("ltx-verdict-icon");
+      const verdictTitle = document.getElementById("ltx-verdict-title");
+      const verdictDesc = document.getElementById("ltx-verdict-desc");
+
+      if (res.verdict === "PASSED") {
+        if (verdictBanner) {
+          verdictBanner.style.display = "flex";
+          verdictBanner.className = "ltx-verdict-banner passed";
+          if (verdictIcon) verdictIcon.textContent = "🎉";
+          if (verdictTitle) verdictTitle.textContent = `PASSED (+${res.score} POIN)`;
+          if (verdictDesc) verdictDesc.textContent = res.message;
+        }
+        if (statusPill) {
+          statusPill.className = "ltx-status-pill passed";
+          statusPill.textContent = `Passed (+${res.score} XP) ✅`;
+        }
+        termAppend(termBox, `[VERDICT]: PASSED! Skor Anda: ${res.score} Poin.`, "stdout-line");
+        termAppend(termBox, res.user_output || "", "stdout-line");
+        showToast(`🎉 Selamat! Tugas berhasil disubmit dan tercatat di Live Scoreboard (+${res.score} Poin)!`, "success");
+
+        // Record progress in user
+        if (state.currentUser) {
+          await recordProgress(state.materials[state.activeMaterialIndex]?.id || currentAssId, res.score);
+        }
+      } else {
+        if (verdictBanner) {
+          verdictBanner.style.display = "flex";
+          verdictBanner.className = "ltx-verdict-banner " + (res.verdict === "WRONG ANSWER" ? "wrong" : "error");
+          if (verdictIcon) verdictIcon.textContent = res.verdict === "WRONG ANSWER" ? "❌" : "⚠️";
+          if (verdictTitle) verdictTitle.textContent = `${res.verdict} (+${res.score} POIN)`;
+          if (verdictDesc) verdictDesc.textContent = res.message;
+        }
+        if (statusPill) {
+          statusPill.className = "ltx-status-pill " + (res.verdict === "WRONG ANSWER" ? "wrong" : "wrong");
+          statusPill.textContent = `${res.verdict}`;
+        }
+        termAppend(termBox, `[VERDICT]: ${res.verdict}`, "stderr-line");
+        termAppend(termBox, res.user_output || res.result?.output || "", "stderr-line");
+        showToast(res.message, "warning");
+      }
+
+      await fetchLiveScores();
+    } catch (err) {
+      console.error("Submit task error:", err);
+      termAppend(termBox, `[NETWORK ERROR] Gagal mengirim submit: ${err.message}`, "stderr-line");
+      showToast("Gagal mengirim jawaban tugas ke server", "error");
+    } finally {
+      state.isExecuting = false;
+      if (btnSubmit) btnSubmit.disabled = false;
+    }
+  }
+
   function loadMaterial(index) {
     if (index < 0 || index >= state.materials.length) return;
     state.activeMaterialIndex = index;
@@ -1353,6 +1698,10 @@ int main() {
 
     const mat = state.materials[index];
     const lang = mat.language === "python" ? "python" : "c";
+
+    // Find matching assignment if available
+    const matchingAss = state.assignments.find(a => a.module_id === (index + 1)) || state.assignments[index];
+    state.activeTaskToSubmit = matchingAss || { id: index + 1, title: mat.title, points: 100 };
 
     // Update Left Panel
     document.getElementById("mat-display-title").textContent = mat.title;
@@ -1367,7 +1716,10 @@ int main() {
     document.getElementById("btn-prev-material").disabled = index === 0;
     document.getElementById("btn-next-material").disabled = index === state.materials.length - 1;
 
-    // Workspace editor starts with empty skeleton so student thinks and writes code
+    // Populate LTX Testcase Drawer
+    populateLtxTestcases(matchingAss || mat);
+
+    // Workspace editor skeleton
     const emptySkeleton = lang === "c" ? `#include <stdio.h>
 
 int main() {
@@ -3231,27 +3583,45 @@ if __name__ == "__main__":
       }
     });
 
-    // Terminal Tab Buttons (Output vs Stdin)
+    // Pure IDE Terminal Tabs
     on("tab-pure-term-output", "click", () => switchTerminalTab("pure", "output"));
     on("tab-pure-term-input", "click", () => switchTerminalTab("pure", "input"));
-    on("tab-ws-term-output", "click", () => switchTerminalTab("workspace", "output"));
-    on("tab-ws-term-input", "click", () => switchTerminalTab("workspace", "input"));
-
-    // Quick STDIN Run Buttons
     on("btn-pure-quick-run", "click", () => executeCode("pure"));
-    on("btn-ws-quick-run", "click", () => executeCode("workspace"));
-
-    // Quick STDIN Enter Key
     on("pure-quick-stdin", "keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         executeCode("pure");
       }
     });
-    on("ws-quick-stdin", "keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        executeCode("workspace");
+
+    // ─── HackerRank / LTX Testcase & Console Event Listeners ───
+    on("btn-ltx-tab-0", "click", () => switchLtxTab("0"));
+    on("btn-ltx-tab-1", "click", () => switchLtxTab("1"));
+    on("btn-ltx-tab-custom", "click", () => switchLtxTab("custom"));
+    on("btn-ltx-tab-output", "click", () => switchLtxTab("output"));
+
+    on("btn-copy-input-0", "click", () => {
+      const t = document.getElementById("ltx-sample-input-0")?.textContent;
+      if (t) { navigator.clipboard.writeText(t); showToast("Contoh input 1 disalin", "info"); }
+    });
+    on("btn-copy-output-0", "click", () => {
+      const t = document.getElementById("ltx-expected-output-0")?.textContent;
+      if (t) { navigator.clipboard.writeText(t); showToast("Expected output 1 disalin", "info"); }
+    });
+    on("btn-copy-input-1", "click", () => {
+      const t = document.getElementById("ltx-sample-input-1")?.textContent;
+      if (t) { navigator.clipboard.writeText(t); showToast("Contoh input 2 disalin", "info"); }
+    });
+    on("btn-copy-output-1", "click", () => {
+      const t = document.getElementById("ltx-expected-output-1")?.textContent;
+      if (t) { navigator.clipboard.writeText(t); showToast("Expected output 2 disalin", "info"); }
+    });
+
+    on("btn-run-code", "click", runLtxCode);
+    on("btn-submit-task-code", "click", submitLtxTask);
+    on("btn-ltx-reset-code", "click", () => {
+      if (confirm("Reset editor ke template awal?")) {
+        loadMaterial(state.activeMaterialIndex);
       }
     });
 

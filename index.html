@@ -22,7 +22,7 @@
   <script src="vendor/codemirror/addon/edit/matchbrackets.min.js"></script>
   <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
 
-  <link rel="stylesheet" href="style.css?v=4.1">
+  <link rel="stylesheet" href="style.css?v=4.2">
 </head>
 <body class="theme-cyber">
 
@@ -971,32 +971,106 @@
           <!-- CodeMirror Editor Mount Point -->
           <div id="codemirror-mount-point"></div>
 
-          <!-- Terminal Output Pane -->
-          <div id="terminal-pane">
-            <div class="terminal-bar">
-              <div class="terminal-left-info">
-                <div class="term-tab-btns">
-                  <button class="term-tab-btn active" data-term-target="ws-output" id="tab-ws-term-output">💻 Output</button>
-                  <button class="term-tab-btn" data-term-target="ws-input" id="tab-ws-term-input">📥 Input (stdin)</button>
+          <!-- HackerRank / LTX Style Testcase & Output Console Drawer -->
+          <div id="ltx-testcase-pane" class="ltx-testcase-container">
+            <div class="ltx-tabs-header">
+              <div class="ltx-testcase-tabs" id="ltx-testcase-tab-list">
+                <button type="button" class="ltx-tab-btn active" data-ltx-tab="0" id="btn-ltx-tab-0">
+                  <span class="ltx-dot"></span> Contoh 1
+                </button>
+                <button type="button" class="ltx-tab-btn" data-ltx-tab="1" id="btn-ltx-tab-1">
+                  <span class="ltx-dot"></span> Contoh 2
+                </button>
+                <button type="button" class="ltx-tab-btn" data-ltx-tab="custom" id="btn-ltx-tab-custom">
+                  📥 Custom Input
+                </button>
+                <button type="button" class="ltx-tab-btn" data-ltx-tab="output" id="btn-ltx-tab-output">
+                  💻 Hasil Eksekusi
+                </button>
+              </div>
+              <div class="ltx-header-metrics">
+                <span class="ltx-status-pill ready" id="ltx-status-badge">Ready to Test</span>
+              </div>
+            </div>
+
+            <!-- Tab 0: Sample Testcase 0 -->
+            <div class="ltx-tab-pane active" id="ltx-pane-0">
+              <div class="ltx-io-grid">
+                <div class="ltx-io-box">
+                  <div class="ltx-box-header">
+                    <span class="ltx-io-label">📥 Contoh Input 1 (stdin):</span>
+                    <button type="button" class="btn-copy-mini" id="btn-copy-input-0" title="Salin Input">📋</button>
+                  </div>
+                  <pre class="ltx-io-code" id="ltx-sample-input-0">15 25</pre>
                 </div>
-                <span class="terminal-sub-info" id="term-exec-metrics">ready</span>
+                <div class="ltx-io-box">
+                  <div class="ltx-box-header">
+                    <span class="ltx-io-label">📤 Output yang Diharapkan (Expected Output):</span>
+                    <button type="button" class="btn-copy-mini" id="btn-copy-output-0" title="Salin Output">📋</button>
+                  </div>
+                  <pre class="ltx-io-code" id="ltx-expected-output-0">Hasil: 40</pre>
+                </div>
               </div>
-              <div class="terminal-actions">
-                <button class="term-action-btn" id="btn-copy-terminal">Salin Output</button>
-                <button class="term-action-btn" id="btn-clear-terminal">Bersihkan</button>
+            </div>
+
+            <!-- Tab 1: Sample Testcase 1 -->
+            <div class="ltx-tab-pane" id="ltx-pane-1" style="display: none;">
+              <div class="ltx-io-grid">
+                <div class="ltx-io-box">
+                  <div class="ltx-box-header">
+                    <span class="ltx-io-label">📥 Contoh Input 2 (stdin):</span>
+                    <button type="button" class="btn-copy-mini" id="btn-copy-input-1" title="Salin Input">📋</button>
+                  </div>
+                  <pre class="ltx-io-code" id="ltx-sample-input-1">100 8</pre>
+                </div>
+                <div class="ltx-io-box">
+                  <div class="ltx-box-header">
+                    <span class="ltx-io-label">📤 Output yang Diharapkan (Expected Output):</span>
+                    <button type="button" class="btn-copy-mini" id="btn-copy-output-1" title="Salin Output">📋</button>
+                  </div>
+                  <pre class="ltx-io-code" id="ltx-expected-output-1">Hasil: 108</pre>
+                </div>
               </div>
             </div>
-            <div class="terminal-body" id="terminal-content-box">
-              <p class="term-line info-line">Codelab Siap. Tulis kode program Anda dan klik RUN untuk mengompilasi.</p>
+
+            <!-- Tab Custom: Custom Input -->
+            <div class="ltx-tab-pane" id="ltx-pane-custom" style="display: none;">
+              <div class="ltx-custom-box">
+                <div class="ltx-custom-header">
+                  <span class="ltx-io-label">⌨️ Uji dengan Custom Input (untuk scanf / input):</span>
+                  <span class="ltx-hint-text">Pisahkan spasi atau baris baru jika input banyak</span>
+                </div>
+                <textarea id="ltx-custom-stdin" class="ltx-custom-textarea" placeholder="Ketik nilai input custom uji coba Anda di sini, misalnya: 10 20..."></textarea>
+              </div>
             </div>
-            <div class="terminal-stdin-body" id="ws-terminal-stdin-pane" style="display: none;">
-              <div class="stdin-hint">💡 Masukkan input program untuk <code>scanf()</code> atau <code>input()</code> di bawah ini:</div>
-              <textarea id="ws-terminal-stdin" class="terminal-stdin-textarea" placeholder="Contoh input data (dipisahkan spasi atau baris baru):&#10;10 25&#10;Atau teks baris per baris..."></textarea>
+
+            <!-- Tab Output: Execution Results & Compiler Feedback -->
+            <div class="ltx-tab-pane" id="ltx-pane-output" style="display: none;">
+              <div class="ltx-verdict-banner" id="ltx-verdict-banner" style="display: none;">
+                <span class="verdict-icon" id="ltx-verdict-icon">✅</span>
+                <div class="verdict-info">
+                  <strong id="ltx-verdict-title">PASSED</strong>
+                  <span id="ltx-verdict-desc">Output program Anda sesuai dengan hasil yang diharapkan!</span>
+                </div>
+              </div>
+              <div class="ltx-output-terminal" id="ltx-terminal-output-box">
+                <p class="term-line info-line">Klik "▶ Run Code" untuk menguji kode atau "🚀 Submit Code" untuk mengirim jawaban.</p>
+              </div>
             </div>
-            <div class="terminal-quick-input-bar">
-              <span class="quick-input-tag">⌨️ STDIN:</span>
-              <input type="text" id="ws-quick-stdin" class="terminal-quick-input" placeholder="Ketik input untuk scanf()... Tekan Enter atau klik Run">
-              <button type="button" id="btn-ws-quick-run" class="btn-quick-run-stdin">↵ Run</button>
+
+            <!-- HackerRank / LTX Bottom Control Bar -->
+            <div class="ltx-bottom-action-bar">
+              <div class="ltx-action-left">
+                <button type="button" class="btn-pixel btn-secondary-action" id="btn-ltx-reset-code">↺ Reset</button>
+              </div>
+              <div class="ltx-action-right">
+                <button type="button" class="btn-pixel btn-run-code-ghost" id="btn-run-code" title="Cek apakah kode bebas dari error (Run Code)">
+                  ▶ Run Code
+                </button>
+                <button type="button" class="btn-pixel btn-submit-code-gold" id="btn-submit-task-code" title="Evaluasi semua test case dan kumpulkan tugas untuk meraih poin">
+                  🚀 Submit Code
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1804,6 +1878,6 @@
   <!-- Toast Notification Mount -->
   <div id="toast-container"></div>
 
-  <script src="app.js?v=4.1"></script>
+  <script src="app.js?v=4.2"></script>
 </body>
 </html>
