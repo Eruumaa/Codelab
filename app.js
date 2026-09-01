@@ -185,6 +185,10 @@ print("Hello from Python IDE!")`
   function initWorkspaceCodeMirror() {
     const mount = document.getElementById("codemirror-mount-point");
     if (!mount || state.workspaceEditor) return;
+    if (typeof CodeMirror === "undefined") {
+      setTimeout(initWorkspaceCodeMirror, 100);
+      return;
+    }
 
     state.workspaceEditor = CodeMirror(mount, {
       value: state.workspaceCode[state.currentLanguage],
@@ -213,6 +217,10 @@ print("Hello from Python IDE!")`
   function initPureCodeMirror() {
     const mount = document.getElementById("pure-codemirror-mount");
     if (!mount || state.pureEditor) return;
+    if (typeof CodeMirror === "undefined") {
+      setTimeout(initPureCodeMirror, 100);
+      return;
+    }
 
     state.pureEditor = CodeMirror(mount, {
       value: state.pureCode[state.pureLanguage],

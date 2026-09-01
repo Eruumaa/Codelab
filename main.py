@@ -22,6 +22,7 @@ app.add_middleware(
 
 # Serve frontend assets & static files
 app.mount("/Assets", StaticFiles(directory="Assets"), name="assets")
+app.mount("/vendor", StaticFiles(directory="vendor"), name="vendor")
 
 @app.get("/")
 def serve_index():
