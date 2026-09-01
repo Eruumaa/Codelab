@@ -22,7 +22,7 @@
   <script src="vendor/codemirror/addon/edit/matchbrackets.min.js"></script>
   <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
 
-  <link rel="stylesheet" href="style.css?v=4.3">
+  <link rel="stylesheet" href="style.css?v=4.4">
 </head>
 <body class="theme-cyber">
 
@@ -1875,9 +1875,34 @@
     </div>
   </div>
 
+  <!-- ════════════════════ MODAL: INTERACTIVE STDIN PROMPT (SCANF) ════════════════════ -->
+  <div class="modal-overlay" id="modal-stdin-prompt">
+    <div class="modal-card modal-card-small">
+      <div class="modal-header">
+        <div>
+          <span class="aslab-badge">⌨️ INPUT PROGRAM (STDIN)</span>
+          <h3 class="modal-heading">Program Membutuhkan Input (scanf)</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-stdin-modal">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <p style="font-size: 0.85rem; color: var(--text-primary); margin-bottom: 12px; line-height: 1.5;">
+          Program Anda menggunakan fungsi input (<strong>scanf</strong>). Masukkan data input yang akan dibaca program (pisahkan spasi atau baris baru jika lebih dari satu nilai):
+        </p>
+        <textarea id="modal-stdin-input-text" class="terminal-stdin-textarea" rows="3" placeholder="Contoh: 10 20 atau teks per baris..." style="width: 100%; min-height: 80px;"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" id="btn-skip-stdin-modal">Jalankan Tanpa Input</button>
+        <button type="button" class="btn-pixel btn-primary-action" id="btn-confirm-stdin-modal">
+          ▶ Jalankan Program
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Mount -->
   <div id="toast-container"></div>
 
-  <script src="app.js?v=4.3"></script>
+  <script src="app.js?v=4.4"></script>
 </body>
 </html>

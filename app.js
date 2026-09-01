@@ -2004,7 +2004,7 @@ if __name__ == "__main__":
   }
 
   // ─── Code Execution (POST /execute) with Interactive STDIN Support ───
-  async function executeCode(mode = "pure") {
+  async function executeCode(mode = "pure", bypassStdinPrompt = false) {
     if (state.isExecuting) return;
 
     const isPure = mode === "pure";
@@ -2013,6 +2013,13 @@ if __name__ == "__main__":
     const termBox = document.getElementById(isPure ? "pure-terminal-content" : "terminal-content-box");
     const termMetrics = document.getElementById(isPure ? "pure-term-metrics" : "term-exec-metrics");
     const btnRun = document.getElementById(isPure ? "btn-pure-run" : "btn-run-code");
+
+    if (!editor) return;
+    const code = editor.getValue().trim();
+    if (!code) {
+      showToast("Tulis kode sebelum menjalankan!", "error");
+      return;
+    }
 
     // Gather STDIN input reliably: check both the quick-input bar and the full input textarea
     let stdinVal = "";
@@ -2027,15 +2034,22 @@ if __name__ == "__main__":
       stdinVal = cVal || qVal || tVal || "";
     }
 
+    // Auto-detect scanf/input: If program needs input and user hasn't provided any STDIN, prompt them!
+    const needsInput = code.includes("scanf") || code.includes("fgets") || code.includes("getchar") || code.includes("cin") || (lang === "python" && code.includes("input("));
+    if (needsInput && !stdinVal && !bypassStdinPrompt) {
+      const modal = document.getElementById("modal-stdin-prompt");
+      const textarea = document.getElementById("modal-stdin-input-text");
+      if (modal && textarea) {
+        modal.classList.add("open");
+        textarea.value = "";
+        setTimeout(() => textarea.focus(), 120);
+        state.pendingExecMode = mode;
+        return;
+      }
+    }
+
     // Ensure output tab is active so the user sees results immediately
     switchTerminalTab(mode, "output");
-
-    if (!editor) return;
-    const code = editor.getValue().trim();
-    if (!code) {
-      showToast("Tulis kode sebelum menjalankan!", "error");
-      return;
-    }
 
     state.isExecuting = true;
     if (btnRun) btnRun.disabled = true;
@@ -2050,8 +2064,8 @@ if __name__ == "__main__":
     termAppend(termBox, compileCmd, "cmd-line");
     if (stdinVal) {
       termAppend(termBox, `[STDIN INPUT]: ${stdinVal}`, "info-line");
-    } else if (code.includes("scanf") || code.includes("fgets") || code.includes("getchar") || code.includes("input(")) {
-      termAppend(termBox, `💡 Info: Program menggunakan fungsi input. Jika program membutuhkan masukan, ketik pada kolom STDIN di bawah lalu klik Run.`, "info-line");
+    } else if (needsInput) {
+      termAppend(termBox, `💡 Info: Program menggunakan fungsi input (scanf). Masukkan data pada kolom STDIN jika ingin menguji nilai lain.`, "info-line");
     }
 
     const startTime = performance.now();
@@ -3622,6 +3636,39 @@ if __name__ == "__main__":
         }
       });
     }
+
+    // ─── STDIN Interactive Prompt Modal Events ───
+    on("btn-close-stdin-modal", "click", () => {
+      document.getElementById("modal-stdin-prompt")?.classList.remove("open");
+      executeCode(state.pendingExecMode || "pure", true);
+    });
+    on("btn-skip-stdin-modal", "click", () => {
+      document.getElementById("modal-stdin-prompt")?.classList.remove("open");
+      executeCode(state.pendingExecMode || "pure", true);
+    });
+    on("btn-confirm-stdin-modal", "click", () => {
+      const val = (document.getElementById("modal-stdin-input-text")?.value || "").trim();
+      document.getElementById("modal-stdin-prompt")?.classList.remove("open");
+      
+      const isPure = (state.pendingExecMode || "pure") === "pure";
+      if (isPure) {
+        const q = document.getElementById("pure-quick-stdin");
+        const t = document.getElementById("pure-terminal-stdin");
+        if (q) q.value = val;
+        if (t) t.value = val;
+      } else {
+        const c = document.getElementById("ltx-custom-stdin");
+        if (c) c.value = val;
+      }
+      
+      executeCode(state.pendingExecMode || "pure", true);
+    });
+    on("modal-stdin-input-text", "keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById("btn-confirm-stdin-modal")?.click();
+      }
+    });
 
     // ─── HackerRank / LTX Testcase & Console Event Listeners ───
     on("btn-ltx-tab-0", "click", () => switchLtxTab("0"));
